@@ -123,8 +123,7 @@ impl Operation {
     pub fn state(&self) -> OperationState {
         self.inner
             .as_ref()
-            .map(|inner| lock(&inner.state).clone())
-            .unwrap_or_default()
+            .map_or_else(OperationState::default, |inner| lock(&inner.state).clone())
     }
 
     /// Empieza una fase y reinicia el progreso. Una operación ya cancelada deja de ser
