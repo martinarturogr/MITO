@@ -1,0 +1,55 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+default-members = ["crates/mito"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/martinarturogr/MITO"
+publish = false
+
+[workspace.dependencies]
+# Crates internos (orden de capas: ver docs/adr/0002-workspace-y-capas.md)
+mito-win = { path = "crates/mito-win" }
+mito-core = { path = "crates/mito-core" }
+mito-i18n = { path = "crates/mito-i18n" }
+mito-transfer = { path = "crates/mito-transfer" }
+mito-catalog = { path = "crates/mito-catalog" }
+mito-engine = { path = "crates/mito-engine" }
+mito-terminal = { path = "crates/mito-terminal" }
+mito-tui = { path = "crates/mito-tui" }
+mito-mcp = { path = "crates/mito-mcp" }
+
+# Externos
+anyhow = "1.0.105"
+clap = { version = "4.6.10", features = ["derive"] }
+thiserror = "2.0.21"
+
+# Tests
+assert_cmd = "2.2.2"
+predicates = "3.1.4"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"
+print_stdout = "warn"
+undocumented_unsafe_blocks = "deny"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

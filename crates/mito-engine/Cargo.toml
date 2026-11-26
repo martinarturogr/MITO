@@ -1,0 +1,18 @@
+[package]
+name = "mito-engine"
+description = "Motor de MITO: dependencias, instalación, profiles, entorno y lanzamiento"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+mito-core.workspace = true
+mito-win.workspace = true
+mito-transfer.workspace = true
+mito-catalog.workspace = true
+
+[lints]
+workspace = true

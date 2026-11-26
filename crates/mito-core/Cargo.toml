@@ -1,0 +1,15 @@
+[package]
+name = "mito-core"
+description = "Núcleo de MITO: rutas confinadas, JSON atómico, locks, config.properties y log local"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+mito-win.workspace = true
+
+[lints]
+workspace = true
