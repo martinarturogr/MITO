@@ -167,7 +167,9 @@ fn classify(key: &str, manifest: &Manifest) -> Result<(), Reject> {
     if let Some(innosetup) = m.get("innosetup")
         && !innosetup.is_boolean()
     {
-        return Err(plain("Pasos no soportados: innosetup"));
+        return Err(Reject::Plain(
+            Message::new("Pasos no soportados: ").with_suffix("innosetup"),
+        ));
     }
     check_persist(m)?;
     let urls = array(m.get("url"));

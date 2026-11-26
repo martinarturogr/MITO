@@ -260,7 +260,7 @@ pub struct ManifestView {
 /// `Pasos no soportados: …` o `installer.args/script debe ser texto o una lista de
 /// líneas`, además de los errores de `portable_path` para `installer.file`.
 pub fn installer_definition(manifest: &Map<String, Value>) -> Result<Option<&Map<String, Value>>> {
-    let unsupported = |what: &str| bail(Message::new("Pasos no soportados: {p1}").arg("p1", what));
+    let unsupported = |what: &str| bail(Message::new("Pasos no soportados: ").with_suffix(what));
     let installer = match manifest.get("installer") {
         None | Some(Value::Null) => return Ok(None),
         Some(Value::Object(map)) if map.is_empty() => return Ok(None),
@@ -293,7 +293,7 @@ pub fn installer_definition(manifest: &Map<String, Value>) -> Result<Option<&Map
         let file = installer.get("file").and_then(Value::as_str);
         let Some(file) = file.filter(|f| crate::pypath::suffix(f).eq_ignore_ascii_case(".ps1"))
         else {
-            return bail(Message::new("Pasos no soportados: {p1}").arg("p1", "installer.file"));
+            return bail(Message::new("Pasos no soportados: ").with_suffix("installer.file"));
         };
         portable_path(file).map_err(Error::from)?;
         return match installer.get("args") {

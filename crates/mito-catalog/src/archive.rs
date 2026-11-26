@@ -20,11 +20,8 @@ use zip::ZipArchive;
 use crate::error::{Error, Result, bail};
 use crate::pypath;
 
-/// Máximo de entradas de un archivo (`150000` en el original).
-pub const MAX_ENTRIES: usize = 150_000;
-
-/// Máximo de bytes expandidos de un archivo (`MAX_EXPANDED`: 12 GiB).
-pub const MAX_EXPANDED: u64 = 12 * 1024 * 1024 * 1024;
+/// Límites compartidos con la extracción de `mito-transfer` (150 000 entradas, 12 GiB).
+pub use mito_transfer::archives::{MAX_ENTRIES, MAX_EXPANDED};
 
 const S_IFMT: u32 = 0o170_000;
 const S_IFLNK: u32 = 0o120_000;
