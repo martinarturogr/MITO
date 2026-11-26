@@ -113,7 +113,7 @@ pub fn portable_path(relative: &str) -> Result<PortablePath> {
 
 /// Resuelve enlaces del prefijo existente de `path` y añade el resto sin tocar el disco,
 /// como `Path.resolve(strict=False)` de Python. `path` no puede contener `..`.
-fn resolve_lenient(path: &Path) -> PathBuf {
+pub(crate) fn resolve_lenient(path: &Path) -> PathBuf {
     let mut existing = path.to_path_buf();
     let mut rest = Vec::new();
     loop {

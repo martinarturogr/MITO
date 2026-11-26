@@ -37,7 +37,7 @@ thiserror = "2.0.21"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry", "std"] }
 uuid = { version = "1.29.3", features = ["v4"] }
-windows = { version = "0.62.2", features = ["Wdk_System_SystemServices", "Win32_Globalization", "Win32_System_SystemInformation"] }
+windows = { version = "0.62.2", features = ["Wdk_System_SystemServices", "Win32_Foundation", "Win32_Globalization", "Win32_Storage_FileSystem", "Win32_System_SystemInformation"] }
 
 # Tests
 assert_cmd = "2.2.2"
