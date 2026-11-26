@@ -10,6 +10,13 @@ publish.workspace = true
 
 [dependencies]
 mito-core.workspace = true
+mito-win.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+regex.workspace = true
+serde.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

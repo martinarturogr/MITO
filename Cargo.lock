@@ -508,6 +508,11 @@ name = "mito-i18n"
 version = "0.0.0"
 dependencies = [
  "mito-core",
+ "mito-win",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
