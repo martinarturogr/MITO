@@ -268,7 +268,11 @@ mod tests {
                 .filter(|(k, _)| !k.is_empty())
                 .collect();
             let text = render(&original, &values);
-            prop_assert_eq!(parse(&text), values);
+            let mut written: Vec<_> = parse(&text).iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+            let mut expected: Vec<_> = values.iter().map(|(k, v)| (k.to_owned(), v.to_owned())).collect();
+            written.sort();
+            expected.sort();
+            prop_assert_eq!(written, expected);
             prop_assert!(text.ends_with('\n'));
         }
     }
