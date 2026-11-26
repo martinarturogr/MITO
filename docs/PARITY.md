@@ -21,9 +21,9 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
 | `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito | F4 | ⬜ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito | F5 | ⬜ |
-| `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog | F7 | ⬜ |
+| `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
 | `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
-| `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog | F3 | ⬜ |
+| `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
 | `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine | F4 | ⬜ |
 | `configuration.py` | 146 | Almacenamiento del editor de configuración; sólo guardados explícitos escriben | mito-core (`config`) | F1 | ✅ |
 | `configuration_ui.py` | 129 | Diálogo Textual de configuración global | mito-tui | F6 | ⬜ |
@@ -72,7 +72,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `publish.py` | 225 | Publica releases numeradas con la credencial Git de GitHub | mito-engine | F11 | ⬜ |
 | `release.py` | 71 | Construye distribuible desde lista blanca explícita, nunca datos de usuario | mito-engine | F11 | ⬜ |
 | `relocation.py` | 268 | Repara rutas absolutas de instancias movidas o copiadas | mito-engine | F11 | ⬜ |
-| `search.py` | 40 | Ordena coincidencias del catálogo: identificador primero, luego descripción | mito-catalog | F3 | ⬜ |
+| `search.py` | 40 | Ordena coincidencias del catálogo: identificador primero, luego descripción | mito-catalog (`search`) | F3 | ✅ |
 | `self_update.py` | 508 | Actualizaciones explícitas de release, aplicadas por runtime desechable | mito-engine | F11 | ⬜ |
 | `self_update_ui.py` | 49 | Revisión humana antes de descargar una release de MITO | mito-tui | F11 | ⬜ |
 | `shortcuts.py` | 233 | Accesos directos de aplicaciones en el escritorio de Windows | mito-win | F8 | ⬜ |
@@ -84,7 +84,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal | F5 | ⬜ |
 | `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
 | `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui | F6 | ⬜ |
-| `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-engine | F11 | ⬜ |
+| `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-catalog (`checks`) | F3 `daily`; F11 consultas de MITO | 🟨 |
 | `versions.py` | 324 | Versiones previas de componentes desde histórico Git y autoupdate | mito-core | F11 | ⬜ |
 
 ## Tests del original
@@ -96,9 +96,9 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_activation.py` | 11 | F4 |  | ⬜ |
 | `test_application_entries.py` | 2 | F8 |  | ⬜ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
-| `test_bucket_resources.py` | 6 | F7 |  | ⬜ |
+| `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`); `prepare` en F7 | 🟨 |
 | `test_burn.py` | 8 | F7 |  | ⬜ |
-| `test_catalog_performance.py` | 4 | F3 |  | ⬜ |
+| `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
 | `test_cli.py` | 12 | F4 |  | ⬜ |
 | `test_component_environment.py` | 2 | F4 |  | ⬜ |
 | `test_components.py` | 17 | F4 |  | ⬜ |
@@ -132,7 +132,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_publish.py` | 9 | F11 |  | ⬜ |
 | `test_release.py` | 2 | F11 |  | ⬜ |
 | `test_relocation.py` | 5 | F11 |  | ⬜ |
-| `test_search.py` | 4 | F3 |  | ⬜ |
+| `test_search.py` | 4 | F3 | `mito-catalog::search` (4) | ✅ |
 | `test_self_update.py` | 28 | F11 |  | ⬜ |
 | `test_shortcuts.py` | 16 | F8 |  | ⬜ |
 | `test_stable_storage.py` | 7 | F4 | Son tests de motor y migración, no de `storage.py`; `storage` tiene tests propios | ⬜ |
@@ -140,7 +140,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_terminal_identity.py` | 4 | F5 |  | ⬜ |
 | `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
 | `test_ui.py` | 26 | F6 |  | ⬜ |
-| `test_update_checks.py` | 10 | F11 |  | ⬜ |
+| `test_update_checks.py` | 10 | F11 | `mito-catalog::checks` (`daily`) | 🟨 |
 | `test_versions.py` | 7 | F11 |  | ⬜ |
 
 ## Comandos CLI
@@ -157,9 +157,9 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito doctor` | F4 | ⬜ |
 | `mito posthog-check` | F1 (PostHog) | ➖ no aplica (ver fuera de alcance) |
 | `mito migrate-storage` | F11 | ⬜ |
-| `mito bucket import <name> <source>` | F3 | ⬜ |
-| `mito bucket refresh [name]` | F3 | ⬜ |
-| `mito search [query] [--compatible]` | F3 | ⬜ |
+| `mito bucket import <name> <source>` | F4 (API lista en F3: `Catalog::import_bucket`) | ⬜ |
+| `mito bucket refresh [name]` | F4 (API lista en F3: `Catalog::refresh_sources`) | ⬜ |
+| `mito search [query] [--compatible]` | F4 (API lista en F3: `search::rank_entries`, `compat::compatibility`) | ⬜ |
 | `mito profile create <name> [--workspace]` | F4 | ⬜ |
 | `mito profile delete <name>` | F4 | ⬜ |
 | `mito profile export <name> <output>` | F11 | ⬜ |
@@ -225,3 +225,8 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Reintento TLS sin verificar con `attempts=1`**: el contador es con signo y no puede quedar en un bucle infinito.
 - **Fallos de escritura local** en una descarga no se reintentan (no son errores de red).
 - **«Descarga excede el límite de {p1} bytes»** es una clave traducible; el original no la traducía.
+- **Huella de manifiesto byte a byte** con `pyjson::dumps`, que imita `json.dumps` (`ensure_ascii`, pares sustitutos, `sort_keys`, separadores, repr de floats); verificada contra Python 3.14.
+- **Tipos inesperados en manifiestos** (`bin` o `env_set` no textuales, `url` no texto) se clasifican como no compatibles con un motivo, en lugar de lanzar una excepción sin capturar.
+- **Snapshots, ZIP de bucket y filtros inválidos** dan un error de dominio con mensaje («Snapshot de catálogo no válido», «Archivo ZIP no válido», «JSON no válido en…», «Filtros de catálogo no válidos», «El manifiesto debe ser un objeto JSON»).
+- **ZIP de bucket con límite de bytes reales leídos**, además del tamaño declarado.
+- **Red y configuración inyectadas** (ADR 0008): el catálogo recibe `BucketSources` y un `Fetcher`; la CLI de F4 los construye desde `config.properties` y `mito-transfer`.

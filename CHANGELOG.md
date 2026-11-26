@@ -18,3 +18,7 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   reintento sin verificar TLS, detección de portales, cancelación de lecturas
   bloqueadas), verificación de 14 algoritmos de hash y extracción validada de ZIP, TAR
   (gzip/xz/bzip2) y 7z/RAR mediante 7-Zip.
+- F3: `mito-catalog` con el modelo de manifiestos Scoop, huella idéntica a la del
+  original, clasificación de compatibilidad, búsqueda con ranking, snapshots de buckets
+  (refresco desde el ZIP de GitHub sin extraerlo, importación local, consulta diaria de
+  manifiestos instalados) y filtros de buckets.

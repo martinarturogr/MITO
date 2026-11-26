@@ -1,0 +1,9 @@
+{
+    "version": "1.0.0",
+    "description": "Módulo de PowerShell (no soportado)",
+    "url": "https://example.org/module-1.0.0.zip",
+    "hash": "sha256:0000000000000000000000000000000000000000000000000000000000000004",
+    "psmodule": {
+        "name": "ModuloDeEjemplo"
+    }
+}
