@@ -1,0 +1,28 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+
+# Datos de una instancia MITO (nunca en Git)
+/core/apps/
+/core/profile-apps/
+/core/staging/
+/core/state/
+/core/tools/
+/home/
+/profiles/
+/workspaces/
+/pocketools/
+/logs/
+/update/
+/dist/
+
+# Snapshots pendientes de insta
+*.snap.new
+*.pending-snap
+
+# Editores / SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
