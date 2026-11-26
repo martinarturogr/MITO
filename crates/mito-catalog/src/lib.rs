@@ -11,8 +11,10 @@ pub mod manifest;
 pub mod pyjson;
 mod pypath;
 pub mod resources;
+pub mod search;
 
 pub use compat::{COMPATIBLE, Compatibility, compatibility};
 pub use error::{Error, FetchError, Result};
 pub use manifest::{Manifest, ManifestView, OneOrMany, array, fingerprint, installer_definition};
 pub use resources::required_buckets;
+pub use search::{Entry, rank_entries, tokens};
