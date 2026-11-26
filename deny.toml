@@ -18,6 +18,7 @@ allow = [
   "Zlib",
   "Unicode-3.0",
   "BSL-1.0",
+  "bzip2-1.0.6", # libbz2-rs-sys (bzip2 nativo para TAR/ZIP); licencia permisiva
   "CC0-1.0",
   "MPL-2.0",
 ]
