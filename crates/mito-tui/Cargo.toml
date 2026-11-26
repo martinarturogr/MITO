@@ -1,0 +1,18 @@
+[package]
+name = "mito-tui"
+description = "Interfaz de texto (ratatui) del gestor MITO"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+mito-core.workspace = true
+mito-i18n.workspace = true
+mito-engine.workspace = true
+mito-terminal.workspace = true
+
+[lints]
+workspace = true

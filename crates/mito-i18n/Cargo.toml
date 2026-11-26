@@ -1,0 +1,15 @@
+[package]
+name = "mito-i18n"
+description = "Traducciones de MITO y detección del idioma de Windows"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+mito-core.workspace = true
+
+[lints]
+workspace = true
