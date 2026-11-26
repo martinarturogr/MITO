@@ -37,8 +37,8 @@ pub enum Error {
     /// (`DownloadIntegrityError`). La interfaz lo explica en un diálogo.
     #[error("{message}")]
     Integrity {
-        /// Texto para el usuario.
-        message: Message,
+        /// Texto para el usuario (en `Box` para que el error siga siendo pequeño).
+        message: Box<Message>,
         /// URL pedida, sin query ni fragmento.
         url: String,
         /// Bytes recibidos.
@@ -72,7 +72,7 @@ impl Error {
     pub fn message(&self) -> Option<Message> {
         match self {
             Self::Core(core) => core.message(),
-            Self::Integrity { message, .. } => Some(message.clone()),
+            Self::Integrity { message, .. } => Some((**message).clone()),
             Self::Http { .. } | Self::Network { .. } | Self::UnsupportedZipMethod => None,
         }
     }

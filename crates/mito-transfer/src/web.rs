@@ -131,10 +131,12 @@ pub fn web_page_error(final_url: &str, url: &str, size: Option<u64>) -> Error {
     let host = hostname(final_url).unwrap_or_else(|| "?".to_owned());
     let shown = if url.is_empty() { final_url } else { url };
     Error::Integrity {
-        message: Message::new(
-            "La red devolvió una página web en lugar del archivo ({p1}); puede ser el portal de autenticación o un bloqueo del proxy. Pulsa INTERNET y reintenta.",
-        )
-        .arg("p1", &host),
+        message: Box::new(
+            Message::new(
+                "La red devolvió una página web en lugar del archivo ({p1}); puede ser el portal de autenticación o un bloqueo del proxy. Pulsa INTERNET y reintenta.",
+            )
+            .arg("p1", &host),
+        ),
         url: public_url(shown),
         size,
         host,

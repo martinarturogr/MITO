@@ -460,10 +460,9 @@ impl Download<'_> {
                 let message = if self.options.max_bytes == MAX_DOWNLOAD {
                     Message::new("Descarga excede el límite de 4 GiB")
                 } else {
-                    Message::new(format!(
-                        "Descarga excede el límite de {} bytes",
-                        self.options.max_bytes
-                    ))
+                    // El original no traducía este texto; con `{p1}` la clave es estable.
+                    Message::new("Descarga excede el límite de {p1} bytes")
+                        .arg("p1", self.options.max_bytes)
                 };
                 return Err(Attempt::Fatal(Error::domain(message)));
             }
@@ -520,12 +519,14 @@ impl Download<'_> {
         );
         let url = public_url(self.address);
         Err(Error::Integrity {
-            message: Message::new(
-                "Hash incorrecto en {p1}: se recibieron {p2} bytes desde {p3}. Un proxy o antivirus puede estar alterando la descarga; prueba desde otra red o avisa a soporte con esta URL. Se ha descartado la descarga.",
-            )
-            .arg("p1", &url)
-            .arg("p2", total)
-            .arg("p3", &host),
+            message: Box::new(
+                Message::new(
+                    "Hash incorrecto en {p1}: se recibieron {p2} bytes desde {p3}. Un proxy o antivirus puede estar alterando la descarga; prueba desde otra red o avisa a soporte con esta URL. Se ha descartado la descarga.",
+                )
+                .arg("p1", &url)
+                .arg("p2", total)
+                .arg("p3", &host),
+            ),
             url,
             size: Some(total),
             host,
