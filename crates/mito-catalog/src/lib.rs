@@ -5,6 +5,8 @@
 //! de los buckets ya resueltos y una implementación de `Fetcher` para las descargas.
 #![forbid(unsafe_code)]
 
+pub mod archive;
+pub mod buckets;
 pub mod compat;
 pub mod error;
 pub mod manifest;
@@ -13,6 +15,7 @@ mod pypath;
 pub mod resources;
 pub mod search;
 
+pub use buckets::{BucketSources, Catalog, Fetcher, read_json_value};
 pub use compat::{COMPATIBLE, Compatibility, compatibility};
 pub use error::{Error, FetchError, Result};
 pub use manifest::{Manifest, ManifestView, OneOrMany, array, fingerprint, installer_definition};

@@ -5,7 +5,7 @@ use mito_core::Message;
 /// Resultado con el [`Error`] del catálogo.
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-/// Fallo de una descarga del `Fetcher`.
+/// Fallo de una descarga del [`Fetcher`](crate::buckets::Fetcher).
 ///
 /// El original distingue el `HTTPError` 404 de cualquier otro fallo (el refresco por
 /// clave prueba la raíz del repositorio si `bucket/` no existe), por eso no basta con un
