@@ -14,3 +14,7 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   log JSON por línea con saneado y rotación, registro local de errores y pánicos,
   persistencia con junctions y hardlinks, y `mito-i18n` con los 24 idiomas incrustados y
   detección del idioma de Windows.
+- F2: `mito-transfer` con descargas HTTP/HTTPS (reintentos, reanudación con `Range`,
+  reintento sin verificar TLS, detección de portales, cancelación de lecturas
+  bloqueadas), verificación de 14 algoritmos de hash y extracción validada de ZIP, TAR
+  (gzip/xz/bzip2) y 7z/RAR mediante 7-Zip.

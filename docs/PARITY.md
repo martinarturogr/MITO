@@ -18,7 +18,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | Módulo Python | Líneas | Responsabilidad | Crate Rust | Fase | Estado |
 |---|---:|---|---|---|---|
 | `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito | F4 | ⬜ |
-| `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer | F2 | ⬜ |
+| `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
 | `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito | F4 | ⬜ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito | F5 | ⬜ |
 | `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog | F7 | ⬜ |
@@ -48,7 +48,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `mcp_ui.py` | 138 | Control y configuración MCP opt-in en Textual | mito-tui | F12 | ⬜ |
 | `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win | F7 | ⬜ |
 | `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-tui | F6 | ⬜ |
-| `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 | ⬜ |
+| `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
 | `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui | F8 | ⬜ |
@@ -82,7 +82,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `terminal.py` | 173 | Una ventana privada de Windows Terminal con activaciones de MITO | mito-terminal | F5 | ⬜ |
 | `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal | F5 | ⬜ |
 | `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal | F5 | ⬜ |
-| `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer | F2 | ⬜ |
+| `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
 | `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui | F6 | ⬜ |
 | `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-engine | F11 | ⬜ |
 | `versions.py` | 324 | Versiones previas de componentes desde histórico Git y autoupdate | mito-core | F11 | ⬜ |
@@ -138,7 +138,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_stable_storage.py` | 7 | F4 | Son tests de motor y migración, no de `storage.py`; `storage` tiene tests propios | ⬜ |
 | `test_terminal.py` | 10 | F5 |  | ⬜ |
 | `test_terminal_identity.py` | 4 | F5 |  | ⬜ |
-| `test_transfer.py` | 10 | F2 |  | ⬜ |
+| `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
 | `test_ui.py` | 26 | F6 |  | ⬜ |
 | `test_update_checks.py` | 10 | F11 |  | ⬜ |
 | `test_versions.py` | 7 | F11 |  | ⬜ |
@@ -217,3 +217,11 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **`network.check_status`** exige dígitos ASCII (el original aceptaba dígitos Unicode con `isdecimal()`).
 - **Validadores reubicados**: `validate_url`, `badge_text`, `validate_source` y `validate_env` viven en `mito-core::config` para validar la configuración sin depender de módulos de fases posteriores; F4, F9 y F10 deben reutilizarlos.
 - **Saneado de rutas**: se mantiene el orden del original (perfil de usuario de Windows antes que la raíz de la instancia); una instancia bajo `C:\Users\…` se muestra como `<USER>\…`.
+- **Extracción con límite de bytes reales** (ZIP y TAR), además del tamaño declarado, con rollback: si la extracción creó el destino se borra entero; si ya existía, solo lo escrito.
+- **ZIP**: se rechazan las entradas cifradas; un método de compresión no soportado se señala tras validar las rutas y antes de escribir. Deflate64, bzip2 y lzma se extraen de forma nativa.
+- **TAR**: la extracción verifica en una segunda pasada que el archivo no cambió desde la validación.
+- **Fallo de 7-Zip** como error de dominio («7-Zip terminó con error (código N)») en lugar de una excepción sin mapear.
+- **`public_url`** elimina también las credenciales `usuario:clave@` de los mensajes.
+- **Reintento TLS sin verificar con `attempts=1`**: el contador es con signo y no puede quedar en un bucle infinito.
+- **Fallos de escritura local** en una descarga no se reintentan (no son errores de red).
+- **«Descarga excede el límite de {p1} bytes»** es una clave traducible; el original no la traducía.
