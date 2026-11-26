@@ -9,6 +9,7 @@
 pub mod config;
 pub mod diagnostics;
 pub mod error;
+pub mod error_tracking;
 pub mod layout;
 pub mod lock;
 pub mod message;
