@@ -12,3 +12,4 @@ sustituye por otro nuevo que lo indique.
 | [0005](0005-bootstrap-hibrido.md) | Extracción nativa y herramientas privadas fijadas | Aceptado |
 | [0006](0006-errores-y-unsafe.md) | Política de errores y de `unsafe` | Aceptado |
 | [0007](0007-solo-log-local.md) | Solo log local, sin telemetría remota | Aceptado |
+| [0008](0008-criterios-del-port-y-kernel.md) | Criterios del port y kernel compartido | Aceptado |

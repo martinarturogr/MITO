@@ -26,11 +26,23 @@ mito-mcp = { path = "crates/mito-mcp" }
 # Externos
 anyhow = "1.0.105"
 clap = { version = "4.6.10", features = ["derive"] }
+dunce = "1.0.5"
+junction = "2.1.0"
+regex = "1.13.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+sha2 = "0.11.2"
+tempfile = "3.27.0"
 thiserror = "2.0.21"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry", "std"] }
+uuid = { version = "1.29.3", features = ["v4"] }
+windows = { version = "0.62.2", features = ["Wdk_System_SystemServices", "Win32_Foundation", "Win32_Globalization", "Win32_Storage_FileSystem", "Win32_System_SystemInformation"] }
 
 # Tests
 assert_cmd = "2.2.2"
 predicates = "3.1.4"
+proptest = "1.12.0"
 
 [workspace.lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
