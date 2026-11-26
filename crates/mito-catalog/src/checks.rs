@@ -47,7 +47,7 @@ pub fn daily<T>(
 where
     T: Serialize + DeserializeOwned,
 {
-    let day = chrono::Local::now().date_naive().to_string();
+    let day = jiff::ZonedDateTime::now().date().to_string();
     daily_on(layout, name, key, force, &day, operation)
 }
 

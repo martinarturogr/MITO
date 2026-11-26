@@ -10,7 +10,7 @@ publish.workspace = true
 
 [dependencies]
 caseless.workspace = true
-chrono.workspace = true
+jiff.workspace = true
 mito-core.workspace = true
 mito-transfer.workspace = true
 regex.workspace = true

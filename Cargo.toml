@@ -26,7 +26,7 @@ mito-mcp = { path = "crates/mito-mcp" }
 # Externos
 anyhow = "1.0.105"
 caseless = "0.2.2"
-chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
+jiff = "1.0.3"
 clap = { version = "4.6.10", features = ["derive"] }
 dunce = "1.0.5"
 junction = "2.1.0"
