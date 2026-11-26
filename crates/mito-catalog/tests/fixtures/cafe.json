@@ -1,0 +1,30 @@
+{
+    "version": "2.1.0",
+    "description": "Gestor de recetas con café — ¡prueba de caracteres no ASCII! 日本",
+    "homepage": "https://example.org/cafe",
+    "license": "MIT",
+    "url": [
+        "https://example.org/cafe-2.1.0.zip",
+        "https://example.org/cafe-data.7z#/data.7z"
+    ],
+    "hash": [
+        "sha256:0000000000000000000000000000000000000000000000000000000000000003",
+        "skip"
+    ],
+    "extract_to": [
+        "app",
+        "data"
+    ],
+    "env_set": {
+        "CAFE_HOME": "$dir\\app"
+    },
+    "env_add_path": "app",
+    "bin": "app\\cafe.exe",
+    "pre_install": [
+        "Write-Output 'preparando'"
+    ],
+    "post_install": "Write-Output 'se omite por política'",
+    "depends": "main/7zip",
+    "ratio": 1.5e-7,
+    "build": 20240901
+}

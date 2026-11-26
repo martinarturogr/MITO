@@ -7,6 +7,7 @@
 
 pub mod archive;
 pub mod buckets;
+pub mod checks;
 pub mod compat;
 pub mod error;
 pub mod manifest;
@@ -16,6 +17,9 @@ pub mod resources;
 pub mod search;
 
 pub use buckets::{BucketSources, Catalog, Fetcher, read_json_value};
+pub use checks::{
+    daily, daily_on, read_disabled_buckets, set_bucket_enabled, write_disabled_buckets,
+};
 pub use compat::{COMPATIBLE, Compatibility, compatibility};
 pub use error::{Error, FetchError, Result};
 pub use manifest::{Manifest, ManifestView, OneOrMany, array, fingerprint, installer_definition};
