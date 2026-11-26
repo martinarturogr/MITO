@@ -1,2 +1,18 @@
 //! Catálogo de manifiestos Scoop: snapshots de buckets, resolución, búsqueda y clasificación.
+//!
+//! Contratos: `docs/spec/modules/catalog.md`, `search.md` y `buckets.md`. Este crate no lee
+//! `config.properties` ni hace red por sí mismo (ADR 0008, punto 10): recibe los orígenes
+//! de los buckets ya resueltos y una implementación de `Fetcher` para las descargas.
 #![forbid(unsafe_code)]
+
+pub mod compat;
+pub mod error;
+pub mod manifest;
+pub mod pyjson;
+mod pypath;
+pub mod resources;
+
+pub use compat::{COMPATIBLE, Compatibility, compatibility};
+pub use error::{Error, FetchError, Result};
+pub use manifest::{Manifest, ManifestView, OneOrMany, array, fingerprint, installer_definition};
+pub use resources::required_buckets;

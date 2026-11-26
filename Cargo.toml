@@ -25,6 +25,8 @@ mito-mcp = { path = "crates/mito-mcp" }
 
 # Externos
 anyhow = "1.0.105"
+caseless = "0.2.2"
+chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
 clap = { version = "4.6.10", features = ["derive"] }
 dunce = "1.0.5"
 junction = "2.1.0"
@@ -51,6 +53,7 @@ sha1 = "0.11.0"
 sha3 = "0.12.0"
 tar = "0.4.46"
 zip = { version = "9.8.2", default-features = false, features = ["deflate-flate2", "deflate64", "bzip2", "lzma"] }
+unicode-normalization = "0.1.26"
 
 # Tests
 assert_cmd = "2.2.2"
