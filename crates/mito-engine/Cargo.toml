@@ -9,10 +9,19 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-mito-core.workspace = true
-mito-win.workspace = true
-mito-transfer.workspace = true
+dunce.workspace = true
 mito-catalog.workspace = true
+mito-core.workspace = true
+mito-transfer.workspace = true
+mito-win.workspace = true
+serde_json.workspace = true
+tempfile.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+zip.workspace = true
 
 [lints]
 workspace = true

@@ -1093,10 +1093,17 @@ dependencies = [
 name = "mito-engine"
 version = "0.0.0"
 dependencies = [
+ "dunce",
  "mito-catalog",
  "mito-core",
  "mito-transfer",
  "mito-win",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tracing",
+ "uuid",
+ "zip",
 ]
 
 [[package]]
