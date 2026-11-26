@@ -143,11 +143,25 @@ impl Engine {
         profile: &str,
         options: &LaunchOptions<'_>,
     ) -> Result<Option<(LaunchCommand, Record)>> {
+        self.launch_command_from(profile, options, crate::environment::process_env())
+    }
+
+    /// Como [`Self::launch_command`] con un entorno base explícito.
+    ///
+    /// # Errors
+    ///
+    /// Los de [`Self::launch_command`].
+    pub fn launch_command_from(
+        &self,
+        profile: &str,
+        options: &LaunchOptions<'_>,
+        base: Env,
+    ) -> Result<Option<(LaunchCommand, Record)>> {
         if options.shortcut.is_some() && options.binary.is_some_and(|b| !b.is_empty()) {
             return bail(Message::new("Modo de lanzamiento no válido"));
         }
         let data = self.profile(profile)?;
-        let mut env = self.environment(profile)?;
+        let mut env = self.environment_from(profile, base)?;
         let workspace = self.workspace_of(profile)?;
         let Some(app) = options.app.filter(|a| !a.is_empty()) else {
             return Ok(None);

@@ -7,7 +7,7 @@
 //!
 //! | Punto | Fase | Por defecto |
 //! |---|---|---|
-//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: <campo>» antes de descargar |
+//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar |
 //! | [`Extensions::msi`], [`Extensions::inno`] | F7 | sin extractor: «Formato de archivo todavía no soportado» |
 //! | [`Terminal::prepare`] | F5 | no-op |
 //! | [`Host::migrate_application_links`] | F8 | no-op |
@@ -36,7 +36,7 @@ pub trait Downloader: Send + Sync {
     ///
     /// # Errors
     ///
-    /// Los de [`mito_transfer::download`].
+    /// Los de [`mito_transfer::download()`].
     fn download(
         &self,
         url: &str,

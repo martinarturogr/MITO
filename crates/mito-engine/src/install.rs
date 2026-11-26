@@ -2,7 +2,7 @@
 //!
 //! Todo el plan (dependencias, compatibilidad, pasos no soportados, diseño de datos) se
 //! calcula y valida antes de descargar nada. Cada payload se prepara en
-//! `core/staging` y solo [`crate::publish`] lo mueve a su ruta estable.
+//! `core/staging` y solo `publish_plan` lo mueve a su ruta estable.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
