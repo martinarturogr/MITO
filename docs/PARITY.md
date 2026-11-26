@@ -40,7 +40,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-win | F8 | ⬜ |
 | `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-win | F7 | ⬜ |
 | `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine | F4 | ⬜ |
-| `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-engine | F4 | ⬜ |
+| `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-mcp | F12 | ⬜ |
 | `localized_ui.py` | 17 | Traduce enlaces por instancia sin cambiar clases Textual | mito-tui | F6 | ⬜ |
 | `mcp_server.py` | 125 | Proceso HTTP MCP alojado en la pestaña de Windows Terminal | mito-mcp | F12 | ⬜ |
 | `mcp_service.py` | 143 | Ciclo de vida del servidor MCP controlado por el gestor | mito-mcp | F12 | ⬜ |
@@ -64,7 +64,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-win | F4 | ⬜ |
 | `profile_files.py` | 399 | Archivos de configuración elegidos a mano en la tabla files del profile | mito-engine | F11 | ⬜ |
 | `profile_files_ui.py` | 188 | Diálogo Textual para elegir archivos de configuración del profile | mito-tui | F11 | ⬜ |
-| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui | F4 | ⬜ |
+| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui | F6 | ⬜ |
 | `profile_transfer.py` | 123 | Comparte selecciones del catálogo y archivos elegidos; nunca serializa profiles | mito-engine | F11 | ⬜ |
 | `profile_transfer_ui.py` | 174 | Diálogos Textual de exportación e importación de profiles | mito-tui | F11 | ⬜ |
 | `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-win | F8 | ⬜ |
