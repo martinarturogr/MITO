@@ -13,6 +13,7 @@ use std::fmt::{self, Write as _};
 pub struct Message {
     template: Cow<'static, str>,
     args: Vec<(Cow<'static, str>, String)>,
+    suffix: String,
 }
 
 impl Message {
@@ -21,7 +22,24 @@ impl Message {
         Self {
             template: template.into(),
             args: Vec::new(),
+            suffix: String::new(),
         }
+    }
+
+    /// Añade un texto que se concatena **sin traducir** tras la traducción.
+    ///
+    /// El original escribe `tr('Variable reservada por MITO: ') + key`: la clave de
+    /// traducción termina en `: ` y el dato se pega después. Esto lo reproduce sin
+    /// inventar claves que no están en los catálogos.
+    #[must_use]
+    pub fn with_suffix(mut self, suffix: impl fmt::Display) -> Self {
+        self.suffix = suffix.to_string();
+        self
+    }
+
+    /// Texto añadido tras la traducción (vacío si no hay).
+    pub fn suffix(&self) -> &str {
+        &self.suffix
     }
 
     /// Añade un argumento con nombre. Un nombre repetido sustituye al anterior.
@@ -53,8 +71,9 @@ impl Message {
     /// Sigue `str.format` de Python: `{nombre}` se sustituye, `{{` y `}}` son llaves
     /// literales. Devuelve `None` si la plantilla usa un nombre sin argumento o tiene
     /// llaves desequilibradas, para que el traductor pueda usar el siguiente fallback.
+    /// El [`suffix`](Self::suffix), si existe, se añade al final.
     pub fn render_with(&self, template: &str) -> Option<String> {
-        let mut out = String::with_capacity(template.len());
+        let mut out = String::with_capacity(template.len() + self.suffix.len());
         let mut chars = template.chars().peekable();
         while let Some(c) = chars.next() {
             match c {
@@ -82,6 +101,7 @@ impl Message {
                 other => out.push(other),
             }
         }
+        out.push_str(&self.suffix);
         Some(out)
     }
 }
@@ -90,7 +110,7 @@ impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.render_with(&self.template) {
             Some(text) => f.write_str(&text),
-            None => f.write_str(&self.template),
+            None => write!(f, "{}{}", self.template, self.suffix),
         }
     }
 }
@@ -159,6 +179,16 @@ mod tests {
         assert_eq!(
             message.render_with("Hello {name}"),
             Some("Hello Ana".to_owned())
+        );
+    }
+
+    #[test]
+    fn el_sufijo_se_pega_sin_traducir() {
+        let message = Message::new("Variable reservada por MITO: ").with_suffix("PATH {x}");
+        assert_eq!(message.to_string(), "Variable reservada por MITO: PATH {x}");
+        assert_eq!(
+            message.render_with("Reserved by MITO: "),
+            Some("Reserved by MITO: PATH {x}".to_owned())
         );
     }
 

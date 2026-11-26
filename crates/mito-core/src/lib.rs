@@ -6,6 +6,7 @@
 //! y cancelación) y [`Layout`] (carpetas de la instancia).
 #![forbid(unsafe_code)]
 
+pub mod config;
 pub mod error;
 pub mod layout;
 pub mod lock;
