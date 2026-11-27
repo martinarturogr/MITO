@@ -57,6 +57,12 @@ impl Default for Limits {
     }
 }
 
+/// `str.casefold()` de Python: las comparaciones sin distinguir mayúsculas de MSI,
+/// Burn e Inno.
+pub(crate) fn casefold(text: &str) -> String {
+    caseless::default_case_fold_str(text)
+}
+
 /// Resultado de [`extract`] (el `bool` del original).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Extraction {
