@@ -950,3 +950,59 @@ fn con_poca_altura_no_hay_panico() {
         rig.press(KeyCode::Esc);
     }
 }
+
+#[test]
+fn la_x_del_manifiesto_lo_cierra() {
+    let mut rig = Rig::with(two_apps);
+    rig.ctrl('f');
+    rig.draw();
+    rig.focus_on("apps");
+    rig.press(KeyCode::Enter);
+    rig.click("manifest");
+    assert_eq!(rig.dialogs(), 1);
+    rig.press(KeyCode::Down);
+    rig.input(&Input::Scroll {
+        column: 40,
+        row: 15,
+        down: true,
+    });
+    rig.draw();
+    rig.input(&Input::Click { column: 2, row: 2 });
+    rig.click("manifest-close");
+    assert_eq!(rig.dialogs(), 0, "{}", rig.draw());
+}
+
+#[test]
+fn la_comprobacion_del_arranque_no_bloquea_y_retiene_las_acciones() {
+    let mut rig = Rig::with(two_apps);
+    // El arranque no deja la interfaz ocupada.
+    rig.app.mount(rig.now);
+    assert!(!rig.app.is_busy());
+    rig.settle();
+
+    // Una comprobación en curso (simulada) retiene la acción hasta que termina.
+    let (tx, rx) = std::sync::mpsc::channel();
+    rig.app.startup = Some((std::thread::spawn(|| {}), rx));
+    rig.app.begin(Action::CheckUpdates);
+    assert!(rig.app.is_busy());
+    assert!(rig.app.queued.is_some());
+    assert!(
+        !rig.log_lines()
+            .iter()
+            .any(|l| l == "Búsqueda de actualizaciones finalizada.")
+    );
+    tx.send(crate::worker::Report::Done {
+        profile: None,
+        failure: None,
+    })
+    .unwrap();
+    rig.settle();
+    assert!(rig.app.queued.is_none());
+    assert!(
+        rig.log_lines()
+            .iter()
+            .any(|l| l == "Búsqueda de actualizaciones finalizada."),
+        "{:?}",
+        rig.log_lines()
+    );
+}

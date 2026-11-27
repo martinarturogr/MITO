@@ -26,9 +26,9 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
 | `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine (`components`) | F4 | ✅ |
 | `configuration.py` | 146 | Almacenamiento del editor de configuración; sólo guardados explícitos escriben | mito-core (`config`) | F1 | ✅ |
-| `configuration_ui.py` | 129 | Diálogo Textual de configuración global | mito-tui | F6 | ⬜ |
+| `configuration_ui.py` | 129 | Diálogo Textual de configuración global | mito-tui (`dialogs::configuration`) | F6 | ✅ |
 | `diagnostics.py` | 150 | Diagnósticos locales acotados, usables por el Python de bootstrap | mito-core (`diagnostics`) | F1 | ✅ |
-| `dialog_header.py` | 22 | Cabecera común de diálogos Textual | mito-tui | F6 | ⬜ |
+| `dialog_header.py` | 22 | Cabecera común de diálogos Textual | mito-tui (`widgets::header`) | F6 | ✅ |
 | `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine (`engine`, `profiles`, `inventory`, `environment`, `install`, `publish`, `launch`) | F4 (hooks F7, terminal F5, traslado F11) | ✅ |
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
 | `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ⬜ |
@@ -41,13 +41,13 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-win | F7 | ⬜ |
 | `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine (`isolation`) | F4 | ✅ |
 | `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-mcp | F12 | ⬜ |
-| `localized_ui.py` | 17 | Traduce enlaces por instancia sin cambiar clases Textual | mito-tui | F6 | ⬜ |
+| `localized_ui.py` | 17 | Traduce enlaces por instancia sin cambiar clases Textual | mito-tui (atajos y diálogos traducidos al dibujar) | F6 | ✅ |
 | `mcp_server.py` | 125 | Proceso HTTP MCP alojado en la pestaña de Windows Terminal | mito-mcp | F12 | ⬜ |
 | `mcp_service.py` | 143 | Ciclo de vida del servidor MCP controlado por el gestor | mito-mcp | F12 | ⬜ |
 | `mcp_tools.py` | 285 | Esquemas MCP y adaptadores sobre los servicios genéricos | mito-mcp | F12 | ⬜ |
 | `mcp_ui.py` | 138 | Control y configuración MCP opt-in en Textual | mito-tui | F12 | ⬜ |
 | `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win | F7 | ⬜ |
-| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-tui | F6 | ⬜ |
+| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-tui | F8 (lo usan los diálogos nativos de F8, F9 y F11) | ⬜ |
 | `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
@@ -64,7 +64,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-engine (`launch`, flags de creación); Job Objects en F8 | F4 / F8 | 🟨 |
 | `profile_files.py` | 399 | Archivos de configuración elegidos a mano en la tabla files del profile | mito-engine | F11 | ⬜ |
 | `profile_files_ui.py` | 188 | Diálogo Textual para elegir archivos de configuración del profile | mito-tui | F11 | ⬜ |
-| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui | F6 | ⬜ |
+| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui (`dialogs::manage_profile`, `dialogs::delete_profile`) | F6 (exportar, importar, acceso directo y archivos: F8/F11) | 🟨 |
 | `profile_transfer.py` | 123 | Comparte selecciones del catálogo y archivos elegidos; nunca serializa profiles | mito-engine | F11 | ⬜ |
 | `profile_transfer_ui.py` | 174 | Diálogos Textual de exportación e importación de profiles | mito-tui | F11 | ⬜ |
 | `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-win | F8 | ⬜ |
@@ -247,4 +247,4 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Catálogo**: Intro (o un clic) sobre la fila con el cursor la selecciona; Textual resaltaba la primera fila al rellenar la tabla. Tras una acción que recarga el catálogo la selección vuelve a vaciarse, como `filter_catalog`.
 - **Portapapeles** con la API de Windows (`mito-win`) en lugar de PowerShell; los mensajes de la interfaz se escriben también en `logs/mito.log` con la operación `ui`.
 - **`ui` sin terminal interactiva** (entrada o salida redirigidas) termina con «MITO: la interfaz necesita una terminal interactiva» tras preparar el profile por defecto.
-- **Comprobación de actualizaciones al arrancar** (`StartupUpdates`) deshabilita la interfaz mientras dura (el original la lanzaba como un worker que no bloqueaba); respeta la caché diaria.
+- **Comprobación de actualizaciones al arrancar** (`StartupUpdates`): corre en segundo plano sin bloquear la interfaz, como el original; una acción pedida mientras tanto espera a que termine (`wait_startup_updates`), con el indicador de ocupado.

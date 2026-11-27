@@ -87,15 +87,16 @@ impl Rig {
         let limit = Instant::now() + Duration::from_secs(20);
         while !done(&self.app) {
             assert!(Instant::now() < limit, "tiempo agotado esperando al hilo");
-            if let Ok(report) = self.app.reports_rx.recv_timeout(Duration::from_millis(10)) {
-                self.app.on_report(report, self.now);
+            self.app.poll_reports(self.now);
+            if !done(&self.app) {
+                std::thread::sleep(Duration::from_millis(5));
             }
         }
     }
 
     /// Espera a que termine la operación en curso.
     pub fn settle(&mut self) {
-        self.pump_until(|app| !app.busy.active);
+        self.pump_until(|app| !app.busy.active && app.startup.is_none());
     }
 
     pub fn input(&mut self, input: &Input) {

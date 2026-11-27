@@ -6,9 +6,9 @@
 //! una confirmación (versión nueva, descargas sin hash) el hilo se bloquea hasta que la
 //! interfaz responde por el canal de la propia petición.
 //!
-//! Diferencia con el original: no hay `wait_startup_updates`. La interfaz no lanza una
-//! acción mientras otra está en curso (`busy`), así que no hay una comprobación de
-//! arranque con la que coordinarse al instalar o al buscar actualizaciones.
+//! El equivalente de `wait_startup_updates` está en la interfaz: la comprobación del
+//! arranque corre en su propio hilo y una acción pedida mientras tanto empieza al
+//! terminar esta.
 //!
 //! `Launch` usa siempre el modo independiente (sin acoplar, F8).
 

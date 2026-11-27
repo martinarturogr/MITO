@@ -98,6 +98,12 @@ pub struct App {
     pub(super) reports_tx: Sender<Report>,
     pub(super) reports_rx: Receiver<Report>,
     pub(super) worker: Option<JoinHandle<()>>,
+    /// Comprobación de actualizaciones del arranque: corre aparte, sin bloquear la
+    /// interfaz (worker `component-updates` del original).
+    pub(super) startup: Option<(JoinHandle<()>, Receiver<Report>)>,
+    /// Acción pedida mientras corre la comprobación del arranque; empieza al terminar
+    /// esta (`wait_startup_updates` del original).
+    pub(super) queued: Option<crate::worker::Action>,
     pub(super) clipboard: Clipboard,
     pub(super) opener: Opener,
     pub(super) identity: bool,
@@ -137,6 +143,8 @@ impl App {
             reports_tx,
             reports_rx,
             worker: None,
+            startup: None,
+            queued: None,
             clipboard: Box::new(mito_win::clipboard::set_text),
             opener: Box::new(mito_core::persistence::open_location),
             identity: true,

@@ -24,7 +24,15 @@ impl App {
         if self.identity {
             mito_terminal::identity::apply_safely(self.engine.layout());
         }
-        self.begin(Action::StartupUpdates);
+        let (tx, rx) = std::sync::mpsc::channel();
+        let handle = worker::spawn_translated(
+            Arc::clone(&self.engine),
+            Action::StartupUpdates,
+            self.current_profile(),
+            tx,
+            self.tr.clone(),
+        );
+        self.startup = Some((handle, rx));
     }
 
     /// Pide una acción: las que necesitan profile avisan «Selecciona un profile» si no
@@ -42,13 +50,22 @@ impl App {
         self.begin(action);
     }
 
-    /// `begin`: marca ocupado, programa el indicador y lanza el hilo.
+    /// `begin`: marca ocupado, programa el indicador y lanza el hilo. Si la
+    /// comprobación del arranque sigue en curso, la acción espera a que termine.
     pub(super) fn begin(&mut self, action: Action) {
         self.start_busy_indicator();
         self.busy.reload_catalog = matches!(
             action,
             Action::Refresh | Action::Install(_) | Action::StartupUpdates | Action::CheckUpdates
         );
+        if self.startup.is_some() {
+            self.queued = Some(action);
+            return;
+        }
+        self.spawn(action);
+    }
+
+    fn spawn(&mut self, action: Action) {
         let profile = self.current_profile();
         self.worker = Some(worker::spawn_translated(
             Arc::clone(&self.engine),
@@ -87,6 +104,41 @@ impl App {
         // Vacío o desconectado: no hay más informes que procesar.
         while let Ok(report) = self.reports_rx.try_recv() {
             self.on_report(report, now);
+        }
+        while let Some(report) = self.startup.as_ref().and_then(|(_, rx)| rx.try_recv().ok()) {
+            self.on_startup_report(report, now);
+        }
+    }
+
+    /// Un informe de la comprobación del arranque: solo registra y, al terminar,
+    /// refresca Inicio y el catálogo si no hay otra operación (`component_updates_done`).
+    pub fn on_startup_report(&mut self, report: Report, now: Instant) {
+        self.now = now;
+        match report {
+            Report::Log { message, error, .. } => {
+                let text = self.tr.tr(&message);
+                self.log.push(text, error);
+            }
+            // No pide confirmaciones; si llegara alguna, se rechaza.
+            Report::Confirm { answer, .. } => {
+                let _ = answer.send(false);
+            }
+            Report::Started(_) => {}
+            Report::Done { .. } => {
+                if let Some((handle, _)) = self.startup.take() {
+                    let _ = handle.join();
+                }
+                self.catalog.data = None;
+                if !self.busy.active {
+                    self.refresh_home();
+                    if self.page == Page::Catalog {
+                        self.load_catalog();
+                    }
+                }
+                if let Some(action) = self.queued.take() {
+                    self.spawn(action);
+                }
+            }
         }
     }
 
