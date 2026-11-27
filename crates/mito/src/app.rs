@@ -16,12 +16,13 @@ use mito_core::diagnostics::{self, LogLevel};
 use mito_core::error_tracking::{self, Options};
 use mito_core::{Layout, MutationLock, Operation};
 use mito_engine::{
-    DownloaderFetcher, Engine, Extensions, InstallOptions, LaunchOptions, ShellKind,
+    DownloaderFetcher, Engine, ExpandKind, Extensions, InstallOptions, LaunchOptions,
+    PowerShellHooks, ShellKind,
 };
 use mito_terminal::{PrivateTerminal, Shell};
 
 use crate::bootstrap;
-use crate::cli::{BucketCommand, Cli, Command, ProfileCommand, ShellType};
+use crate::cli::{BucketCommand, Cli, Command, HookExpand, ProfileCommand, ShellType};
 use crate::console::Console;
 use crate::doctor;
 
@@ -43,16 +44,19 @@ pub fn run(cli: Cli, console: &Console, operation: &Operation, interrupted: &Ato
             return FAILURE;
         }
     };
-    let engine = Engine::with_extensions(root, extensions());
+    let extensions = extensions(&root);
+    let engine = Engine::with_extensions(root, extensions);
     // Equivalente de `startup.py`: el log local y el registro de pánicos de hilos.
     let _ = diagnostics::init(engine.layout().clone());
     error_tracking::install_panic_hook(engine.layout().clone());
     dispatch(&engine, &command, console, operation, interrupted)
 }
 
-/// Puntos de extensión del binario: el Windows Terminal privado y el resto reales.
-fn extensions() -> Extensions {
+/// Puntos de extensión del binario: el Windows Terminal privado, los hooks de PowerShell
+/// (que vuelven a `core\bin\mito.exe` para extraer) y el resto reales.
+fn extensions(root: &std::path::Path) -> Extensions {
     Extensions {
+        hooks: Box::new(PowerShellHooks::new(Layout::new(root).mito_exe())),
         terminal: Box::new(PrivateTerminal),
         ..Extensions::default()
     }
@@ -142,6 +146,11 @@ pub fn dispatch_with(
 ) -> i32 {
     let layout = engine.layout();
     let name = command.name();
+    // `hook-expand` lo lanza un hook en mitad de una instalación: no inicializa la
+    // instancia ni escribe en el diagnóstico, y solo informa por stdout/stderr.
+    if let Command::HookExpand(args) = command {
+        return hook_expand(args, console);
+    }
     // `logs` sale antes de escribir en el diagnóstico.
     if matches!(command, Command::Logs) {
         for folder in diagnostics::locations(layout) {
@@ -212,6 +221,29 @@ pub fn dispatch_with(
             if owned {
                 pause_owned_exit(console, FAILURE);
             }
+            FAILURE
+        }
+    }
+}
+
+/// `hook-expand` (`mito.hooks.__main__`): el error va a stderr y el código es 1.
+fn hook_expand(args: &HookExpand, console: &Console) -> i32 {
+    let layout = Layout::new(&args.root);
+    let result = ExpandKind::parse(&args.kind).and_then(|kind| {
+        mito_engine::hook_expand(
+            kind,
+            &layout,
+            &args.payload,
+            &args.archive,
+            &args.destination,
+            &args.extract_dir,
+            &|message| console.line(message.to_string()),
+        )
+    });
+    match result {
+        Ok(()) => 0,
+        Err(error) => {
+            console.error_line(error.to_string());
             FAILURE
         }
     }
@@ -358,6 +390,7 @@ fn execute(
         Command::Logs
         | Command::PocketoolRun(_)
         | Command::HostRun(_)
+        | Command::HookExpand(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
         | Command::AppShortcut(_)
@@ -375,7 +408,7 @@ fn ui(engine: &Engine, profile: Option<&str>) -> anyhow::Result<i32> {
     engine.ensure_default_profile()?;
     // La interfaz comparte el motor con su hilo de trabajo, así que necesita uno propio:
     // se construye otro sobre la misma raíz y con los mismos puntos de extensión.
-    let owned = Engine::with_extensions(engine.root(), extensions());
+    let owned = Engine::with_extensions(engine.root(), extensions(engine.root()));
     mito_tui::run(owned, profile.map(str::to_owned))?;
     Ok(0)
 }
