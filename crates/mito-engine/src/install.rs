@@ -15,12 +15,15 @@ use mito_catalog::{Manifest, array, compatibility, fingerprint};
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::storage::{identifier, inside, write_json};
 use mito_core::{Message, Operation};
-use mito_transfer::archives::{ExtractOptions, Extraction};
+use mito_transfer::archives::{
+    APP, ExtractOptions, Extraction, inno_root, restore_declared_targets,
+};
 use serde_json::{Value, json};
 
 use crate::engine::Engine;
 use crate::environment::bins;
 use crate::error::{Error, Result, bail, io_error, step};
+use crate::extensions::HookContext;
 use crate::fsutil::{copy_file, create_dir_all, is_link};
 use crate::profiles::Profile;
 use crate::record::{Record, Records, effective};
@@ -320,7 +323,7 @@ impl Engine {
     }
 
     /// Ruta de `innounp.exe` si existe `core/tools/innounp/innounp.exe` (preparado por el
-    /// bootstrap). El extractor de Inno Setup lo conecta F7 con [`crate::Extensions::inno`].
+    /// bootstrap). Lo usa el extractor de Inno Setup (`archives::extract` con `innosetup`).
     pub fn innounp_path(&self) -> Option<PathBuf> {
         let path = self.layout().innounp_exe();
         path.is_file().then_some(path)
@@ -394,26 +397,28 @@ impl Engine {
                 };
                 Ok(chosen.unwrap_or_else(|| ".".to_owned()))
             };
-            let extract_dir = positional("extract_dir")?;
+            let mut extract_dir = positional("extract_dir")?;
+            let innosetup = m.get("innosetup").is_some_and(py_truthy);
+            // Scoop: con `innosetup`, una constante de Inno desnuda en `extract_dir`
+            // elige la raíz del instalador a extraer (`innounp -c`) en lugar de una
+            // subcarpeta.
+            let selected = if innosetup {
+                inno_root(&extract_dir).map(str::to_owned)
+            } else {
+                None
+            };
             operation.phase(
                 "PREPARANDO ARCHIVOS",
                 Message::new("Extrayendo {p1}…").arg("p1", key).to_string(),
                 true,
             );
             let sevenzip = self.sevenzip_path();
+            let innounp = self.innounp_path();
             let extractor = ExtractOptions {
                 sevenzip: sevenzip.as_deref(),
-                innosetup: m.get("innosetup").is_some_and(py_truthy),
-                inno: self
-                    .extensions()
-                    .inno
-                    .as_deref()
-                    .map(|f| f as &dyn Fn(&Path, &Path) -> mito_transfer::Result<()>),
-                msi: self
-                    .extensions()
-                    .msi
-                    .as_deref()
-                    .map(|f| f as &dyn Fn(&Path, &Path) -> mito_transfer::Result<()>),
+                innosetup,
+                innounp: innounp.as_deref(),
+                inno_root: selected.as_deref().unwrap_or(APP),
                 log: Some(&|message| log(message.into())),
                 limits: None,
             };
@@ -423,6 +428,9 @@ impl Engine {
                 )?)
             })?;
             operation.check()?;
+            if selected.is_some() && extracted == Extraction::Extracted {
+                ".".clone_into(&mut extract_dir);
+            }
             let source = inside(
                 &expanded,
                 if extracted == Extraction::Extracted {
@@ -498,18 +506,45 @@ impl Engine {
             })?;
             operation.check()?;
         }
+        if m.get("innosetup").is_some_and(py_truthy) {
+            // Inno renombra los duplicados (`Editor,1.exe`): se restauran los nombres
+            // declarados en `shortcuts` y `bin` si las copias son idénticas.
+            let mut declared: Vec<String> = array(m.get("shortcuts"))
+                .iter()
+                .filter_map(|shortcut| shortcut.as_array()?.first().map(py_str))
+                .collect();
+            declared.extend(bins(&m)?.into_iter().map(|bin| bin.executable));
+            restore_declared_targets(&payload, &declared)?;
+        }
         operation.phase(
             "PREPARANDO ARCHIVOS",
             Message::new("Preparando {p1}").arg("p1", key),
             true,
         );
+        // La aprobación de los orígenes remotos ya se pidió al planificar.
+        let origins = self.catalog()?.resource_sources(key, &m)?;
+        crate::resources::prepare_resources(
+            &origins,
+            &stage.join("hook-buckets"),
+            self.extensions().downloader.as_ref(),
+            operation,
+            log,
+        )?;
         operation.check()?;
+        let hook_context = HookContext {
+            layout,
+            key,
+            manifest: &m,
+            payload: &payload,
+            log,
+            network: self.extensions().network.as_ref(),
+        };
         step(layout, "install", "pre-install", Some(key), || {
-            self.extensions().hooks.pre_install(key, &m, &payload)
+            self.extensions().hooks.pre_install(&hook_context)
         })?;
         operation.check()?;
         step(layout, "install", "installer", Some(key), || {
-            self.extensions().hooks.installer(key, &m, &payload)
+            self.extensions().hooks.installer(&hook_context)
         })?;
         operation.check()?;
         log(Message::new("Validando {p1}").arg("p1", key).into());

@@ -22,6 +22,7 @@ pub mod environment;
 pub mod error;
 pub mod extensions;
 mod fsutil;
+pub mod hooks;
 pub mod install;
 pub mod inventory;
 pub mod isolation;
@@ -29,6 +30,7 @@ pub mod launch;
 pub mod profiles;
 mod publish;
 pub mod record;
+pub mod resources;
 pub mod transfer;
 
 use mito_core::Message;
@@ -38,12 +40,15 @@ pub use engine::Engine;
 pub use environment::{AppEntry, Bin, Env};
 pub use error::{Error, Result};
 pub use extensions::{
-    Downloader, Extensions, FaultHook, Hooks, Host, Jobs, Network, NoHooks, Pocketools, Terminal,
+    Downloader, Extensions, FaultHook, HookContext, Hooks, Host, Jobs, Network, NoHooks,
+    Pocketools, Terminal,
 };
+pub use hooks::{ExpandKind, PowerShellHooks, hook_expand};
 pub use install::{InstallOptions, MoveOutcome, Plan, move_whole};
 pub use launch::{LaunchCommand, LaunchOptions, ShellKind};
 pub use profiles::Profile;
 pub use record::{Record, Records};
+pub use resources::prepare_resources;
 pub use transfer::{DownloaderFetcher, HttpDownloader};
 
 /// Una línea del registro de una operación (`log` del original).
@@ -79,6 +84,11 @@ impl From<&'static str> for LogLine {
     fn from(template: &'static str) -> Self {
         Message::new(template).into()
     }
+}
+
+/// Línea de registro con un texto que el original no traduce (`log(f'{key}: {línea}')`).
+pub(crate) fn raw_line(text: impl std::fmt::Display) -> LogLine {
+    Message::new("{p1}").arg("p1", text).into()
 }
 
 /// Función de registro de mensajes (`log` del original).

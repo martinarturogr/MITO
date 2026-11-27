@@ -14,6 +14,7 @@ mito-catalog.workspace = true
 mito-core.workspace = true
 mito-transfer.workspace = true
 mito-win.workspace = true
+regex.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
 thiserror.workspace = true

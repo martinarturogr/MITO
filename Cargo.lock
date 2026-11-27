@@ -1563,6 +1563,7 @@ dependencies = [
  "assert_cmd",
  "clap",
  "ctrlc",
+ "dunce",
  "insta",
  "mito-catalog",
  "mito-core",
@@ -1629,6 +1630,7 @@ dependencies = [
  "mito-core",
  "mito-transfer",
  "mito-win",
+ "regex",
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",
@@ -1679,13 +1681,17 @@ version = "0.0.0"
 dependencies = [
  "blake2",
  "bzip2",
+ "caseless",
  "digest 0.11.3",
  "flate2",
  "liblzma",
  "md-5",
  "mito-core",
+ "mito-win",
  "proptest",
+ "regex",
  "reqwest",
+ "roxmltree",
  "rustls",
  "rustls-pki-types",
  "serde_json",
@@ -2463,6 +2469,15 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "roxmltree"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

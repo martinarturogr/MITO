@@ -42,3 +42,15 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   Manifiesto), panel de log con «Copiar log», diálogos modales, indicador de ocupado,
   progreso con cancelación y aviso de paso largo. La terminal se restaura siempre,
   también con un pánico.
+- F7: hooks del catálogo con PowerShell (`pre_install`, `installer.script` e
+  `installer.file`) en `mito-engine::hooks`, con el preámbulo y el entorno del original
+  y los helpers `Expand-*` que vuelven al subcomando oculto `mito.exe hook-expand`
+  (ADR 0012); `post_install` sigue omitiéndose. Recursos de bucket (`$bucketsdir`) con
+  copia privada por instalación antes de `pre_install`.
+  Extractores de instaladores como datos en `mito-transfer`: MSI (base leída con
+  `msi.dll` en solo lectura, CAB incrustados con el 7-Zip privado; todos los CAB se
+  validan antes de copiar nada), bundles WiX 3 Burn (sección `.wixburn`, manifiesto XML,
+  tamaños y hashes) e Inno Setup (`innounp` privado, listado estricto y publicación solo
+  si lo extraído coincide). `archives::extract` despacha MSI e Inno con las nuevas opciones
+  `innounp` e `inno_root`; el motor restaura los nombres declarados de Inno (`,N`) y
+  elige la raíz `{app}` o `{code_X}` desde `extract_dir`.

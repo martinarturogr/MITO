@@ -7,8 +7,7 @@
 //!
 //! | Punto | Fase | Por defecto |
 //! |---|---|---|
-//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar |
-//! | [`Extensions::msi`], [`Extensions::inno`] | F7 | sin extractor: «Formato de archivo todavía no soportado» |
+//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar ([`crate::PowerShellHooks`] en el binario) |
 //! | [`Terminal::prepare`] | F5 | no-op |
 //! | [`Host::migrate_application_links`] | F8 | no-op |
 //! | [`Pocketools`] | F10 | lista vacía |
@@ -46,6 +45,22 @@ pub trait Downloader: Send + Sync {
     ) -> mito_transfer::Result<()>;
 }
 
+/// Contexto de ejecución de un hook: la instancia, el componente y el payload en staging.
+pub struct HookContext<'a> {
+    /// Carpetas de la instancia.
+    pub layout: &'a Layout,
+    /// Clave `bucket/app` del componente.
+    pub key: &'a str,
+    /// Manifiesto efectivo.
+    pub manifest: &'a Map<String, Value>,
+    /// Payload en staging (`core/staging/<tmp>/payload`).
+    pub payload: &'a Path,
+    /// Registro de la operación.
+    pub log: crate::Log<'a>,
+    /// Red de la instancia, para el proxy del entorno del hook (F9).
+    pub network: &'a dyn Network,
+}
+
 /// Ejecutor de los hooks de instalación (`hooks.py`, F7).
 pub trait Hooks: Send + Sync {
     /// Campo del manifiesto efectivo que este ejecutor no soporta, si lo hay. Se
@@ -57,17 +72,18 @@ pub trait Hooks: Send + Sync {
     /// # Errors
     ///
     /// Los del hook.
-    fn pre_install(&self, key: &str, manifest: &Map<String, Value>, payload: &Path) -> Result<()>;
+    fn pre_install(&self, context: &HookContext<'_>) -> Result<()>;
 
     /// Ejecuta `installer` (script o archivo) sobre el payload en staging.
     ///
     /// # Errors
     ///
     /// Los del instalador.
-    fn installer(&self, key: &str, manifest: &Map<String, Value>, payload: &Path) -> Result<()>;
+    fn installer(&self, context: &HookContext<'_>) -> Result<()>;
 }
 
 /// Hooks por defecto: ningún paso se ejecuta y un manifiesto que lo requiere se rechaza.
+/// El binario instala [`crate::PowerShellHooks`].
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoHooks;
 
@@ -89,11 +105,11 @@ impl Hooks for NoHooks {
         })
     }
 
-    fn pre_install(&self, _: &str, _: &Map<String, Value>, _: &Path) -> Result<()> {
+    fn pre_install(&self, _: &HookContext<'_>) -> Result<()> {
         Ok(())
     }
 
-    fn installer(&self, _: &str, _: &Map<String, Value>, _: &Path) -> Result<()> {
+    fn installer(&self, _: &HookContext<'_>) -> Result<()> {
         Ok(())
     }
 }
@@ -248,9 +264,6 @@ pub struct NoJobs;
 
 impl Jobs for NoJobs {}
 
-/// Extractor delegado (MSI o Inno Setup, F7): recibe el archivo y el destino.
-pub type Extractor = Box<dyn Fn(&Path, &Path) -> mito_transfer::Result<()> + Send + Sync>;
-
 /// Punto de fallo para pruebas: recibe el nombre del punto (`save-profile`,
 /// `prepare-payload`, `refresh-launchers`) y su sujeto (el profile) y puede devolver un
 /// error de E/S para simular el fallo.
@@ -272,10 +285,6 @@ pub struct Extensions {
     pub network: Box<dyn Network>,
     /// Job Objects (F8).
     pub jobs: Box<dyn Jobs>,
-    /// Extractor de MSI (F7).
-    pub msi: Option<Extractor>,
-    /// Extractor de Inno Setup (F7).
-    pub inno: Option<Extractor>,
     /// Ruta de `7z.exe`; `None` usa `core/tools/7zip/7z.exe` si existe (F5).
     pub sevenzip: Option<PathBuf>,
     /// Inyección de fallos para pruebas.
@@ -293,8 +302,6 @@ impl Default for Extensions {
             pocketools: Box::new(NoPocketools),
             network: Box::new(NoNetwork),
             jobs: Box::new(NoJobs),
-            msi: None,
-            inno: None,
             sevenzip: None,
             fault: None,
         }

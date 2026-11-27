@@ -55,6 +55,9 @@ pub enum Command {
     /// Servidor MCP (uso interno)
     #[command(hide = true)]
     McpServer(McpServer),
+    /// Extraer un archivo dentro del payload de un hook (uso interno, ADR 0012)
+    #[command(hide = true)]
+    HookExpand(HookExpand),
     /// Convertir instalaciones antiguas a rutas estables, con las aplicaciones cerradas
     MigrateStorage,
     /// Gestionar buckets
@@ -141,6 +144,7 @@ impl Command {
             Self::HostRun(_) => "host-run",
             Self::Doctor => "doctor",
             Self::McpServer(_) => "mcp-server",
+            Self::HookExpand(_) => "hook-expand",
             Self::MigrateStorage => "migrate-storage",
             Self::Bucket(_) => "bucket",
             Self::Search { .. } => "search",
@@ -209,6 +213,24 @@ pub struct HostRun {
     /// Argumentos del ejecutable (tras `--`)
     #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
     pub arguments: Vec<String>,
+}
+
+/// Argumentos de `hook-expand`: los helpers `Expand-*` de los hooks vuelven aquí.
+#[derive(Debug, Args)]
+pub struct HookExpand {
+    /// Extractor: `7zip`, `inno`, `dark` o `msi`
+    pub kind: String,
+    /// Raíz de la instancia
+    pub root: PathBuf,
+    /// Payload en staging; el archivo y el destino deben estar dentro
+    pub payload: PathBuf,
+    /// Archivo a extraer
+    pub archive: PathBuf,
+    /// Carpeta de destino
+    pub destination: PathBuf,
+    /// Carpeta del contenido extraído que se copia (`{app}` para Inno)
+    #[arg(default_value = ".")]
+    pub extract_dir: String,
 }
 
 /// Argumentos de `mcp-server`.

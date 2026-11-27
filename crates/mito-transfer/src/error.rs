@@ -63,6 +63,12 @@ impl Error {
         Self::Core(mito_core::Error::domain(message))
     }
 
+    /// Error de dominio con un texto que no se traduce (los `MSI: …`, `Inno: …` y
+    /// `Burn: …` del original no pasan por `tr`).
+    pub fn untranslated(text: impl std::fmt::Display) -> Self {
+        Self::domain(Message::new("{p1}").arg("p1", text))
+    }
+
     /// Indica si el error es una cancelación del usuario.
     pub fn is_cancelled(&self) -> bool {
         matches!(self, Self::Core(core) if core.is_cancelled())

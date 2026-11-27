@@ -60,7 +60,7 @@ static GITHUB: LazyLock<Regex> = LazyLock::new(|| {
 const SCHEMA: u64 = 1;
 
 /// Propietario y repositorio de un origen GitHub (`https?://github.com/<owner>/<repo>`).
-fn github_repository(source: &str) -> Option<(String, String)> {
+pub fn github_repository(source: &str) -> Option<(String, String)> {
     let captures = GITHUB.captures(source.trim_end_matches('/'))?;
     Some((captures[1].to_owned(), captures[2].to_owned()))
 }
