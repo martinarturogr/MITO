@@ -15,8 +15,12 @@ use anyhow::Context as _;
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::error_tracking::{self, Options};
 use mito_core::{Layout, MutationLock, Operation};
-use mito_engine::{DownloaderFetcher, Engine, InstallOptions, LaunchOptions, ShellKind};
+use mito_engine::{
+    DownloaderFetcher, Engine, Extensions, InstallOptions, LaunchOptions, ShellKind,
+};
+use mito_terminal::{PrivateTerminal, Shell};
 
+use crate::bootstrap;
 use crate::cli::{BucketCommand, Cli, Command, ProfileCommand, ShellType};
 use crate::console::Console;
 use crate::doctor;
@@ -39,7 +43,11 @@ pub fn run(cli: Cli, console: &Console, operation: &Operation, interrupted: &Ato
             return FAILURE;
         }
     };
-    let engine = Engine::new(root);
+    let extensions = Extensions {
+        terminal: Box::new(PrivateTerminal),
+        ..Extensions::default()
+    };
+    let engine = Engine::with_extensions(root, extensions);
     // Equivalente de `startup.py`: el log local y el registro de pánicos de hilos.
     let _ = diagnostics::init(engine.layout().clone());
     error_tracking::install_panic_hook(engine.layout().clone());
@@ -68,13 +76,10 @@ fn unavailable(command: &Command) -> Option<String> {
         Command::Profile(ProfileCommand::Export { .. }) => "profile export",
         Command::Profile(ProfileCommand::Import { .. }) => "profile import",
         Command::Ui { .. }
-        | Command::Start { .. }
-        | Command::Bootstrap
         | Command::PocketoolRun(_)
         | Command::HostRun(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
-        | Command::Terminal { .. }
         | Command::AppShortcut(_)
         | Command::Shortcut { .. }
         | Command::Release(_) => command.name(),
@@ -102,10 +107,36 @@ pub fn dispatch(
     operation: &Operation,
     interrupted: &AtomicBool,
 ) -> i32 {
-    if let Some(message) = unavailable(command) {
-        console.error_line(format!("MITO: {message}"));
-        return FAILURE;
+    dispatch_with(
+        engine,
+        command,
+        console,
+        operation,
+        interrupted,
+        &mito_core::path_limit::long_paths_enabled,
+    )
+}
+
+/// Subcomandos que no se ejecutan desde una raíz demasiado larga: abrir el gestor y
+/// preparar herramientas. Las apps, shims y MCP ya instalados siguen funcionando hasta
+/// mover la carpeta. La vista previa y `--approved` de `bootstrap` no lo comprueban.
+fn blocks_on_long_root(command: &Command) -> bool {
+    match command {
+        Command::Ui { .. } | Command::Start { .. } => true,
+        Command::Bootstrap(args) => !args.approved && !args.preview_welcome,
+        _ => false,
     }
+}
+
+/// Como [`dispatch`], con el detector de rutas largas de Windows inyectado.
+pub fn dispatch_with(
+    engine: &Engine,
+    command: &Command,
+    console: &Console,
+    operation: &Operation,
+    interrupted: &AtomicBool,
+    long_paths: &dyn Fn() -> bool,
+) -> i32 {
     let layout = engine.layout();
     let name = command.name();
     // `logs` sale antes de escribir en el diagnóstico.
@@ -115,6 +146,17 @@ pub fn dispatch(
         }
         return 0;
     }
+    // La vista previa de la bienvenida no escribe nada: ni log ni carpetas.
+    if let Command::Bootstrap(args) = command
+        && args.preview_welcome
+    {
+        let options = bootstrap::Options {
+            approved: args.approved,
+            preview_welcome: true,
+        };
+        let downloader = engine.extensions().downloader.as_ref();
+        return bootstrap::run(layout, options, console, operation, downloader);
+    }
     diagnostics::write(
         layout,
         LogLevel::Info,
@@ -122,7 +164,30 @@ pub fn dispatch(
         "Command started",
         &[("runtime", diagnostics::environment())],
     );
+    if blocks_on_long_root(command)
+        && let Some(message) = mito_core::path_limit::problem(engine.root(), long_paths)
+    {
+        let text = message.to_string();
+        diagnostics::write(
+            layout,
+            LogLevel::Error,
+            &format!("cli.{name}"),
+            &text,
+            &[("phase", serde_json::json!("startup.path-limit"))],
+        );
+        console.error_line(format!("\nMITO: {text}\n"));
+        console.pause("Pulsa Intro para cerrar");
+        return FAILURE;
+    }
+    if let Some(message) = unavailable(command) {
+        console.error_line(format!("MITO: {message}"));
+        return FAILURE;
+    }
     let owned = is_owned(command);
+    if owned || matches!(command, Command::Shell { .. }) {
+        // La identidad de la barra de tareas nunca impide arrancar.
+        mito_terminal::identity::apply_safely(layout);
+    }
     let result = engine
         .initialize()
         .map_err(anyhow::Error::from)
@@ -160,12 +225,13 @@ fn is_domain(error: &(dyn StdError + 'static)) -> bool {
     error.is::<mito_engine::Error>()
         || error.is::<mito_catalog::Error>()
         || error.is::<mito_core::Error>()
+        || error.is::<mito_transfer::Error>()
         || error.is::<std::io::Error>()
 }
 
 /// Texto de un error para `MITO: …`. Un error de dominio se muestra tal cual (sin
 /// cadena de causas); los errores del propio binario añaden su contexto.
-fn describe(error: &anyhow::Error) -> String {
+pub(crate) fn describe(error: &anyhow::Error) -> String {
     let mut parts = Vec::new();
     for link in error.chain() {
         parts.push(link.to_string());
@@ -196,6 +262,8 @@ fn capture(layout: &Layout, error: &anyhow::Error, operation: &str) {
     } else if let Some(error) = error.downcast_ref::<mito_catalog::Error>() {
         error_tracking::capture(layout, error, &options);
     } else if let Some(error) = error.downcast_ref::<mito_core::Error>() {
+        error_tracking::capture(layout, error, &options);
+    } else if let Some(error) = error.downcast_ref::<mito_transfer::Error>() {
         error_tracking::capture(layout, error, &options);
     } else if let Some(error) = error.downcast_ref::<std::io::Error>() {
         error_tracking::capture(layout, error, &options);
@@ -257,21 +325,70 @@ fn execute(
             };
             return Ok(engine.launch(&run.profile, &options)?);
         }
+        Command::Start { profile } => return start(engine, profile.as_deref(), console, operation),
+        Command::Bootstrap(args) => {
+            let options = bootstrap::Options {
+                approved: args.approved,
+                preview_welcome: args.preview_welcome,
+            };
+            let downloader = engine.extensions().downloader.as_ref();
+            return Ok(bootstrap::run(
+                engine.layout(),
+                options,
+                console,
+                operation,
+                downloader,
+            ));
+        }
+        Command::Terminal {
+            profile,
+            shell_type,
+            new: _,
+        } => {
+            let shell = match shell_type {
+                ShellType::Cmd => Shell::Cmd,
+                ShellType::Powershell => Shell::PowerShell,
+            };
+            mito_terminal::launch(engine, Some(profile), shell, None)?;
+        }
         Command::Logs
         | Command::Ui { .. }
-        | Command::Start { .. }
-        | Command::Bootstrap
         | Command::PocketoolRun(_)
         | Command::HostRun(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
-        | Command::Terminal { .. }
         | Command::AppShortcut(_)
         | Command::Shortcut { .. }
         | Command::Release(_) => {
             anyhow::bail!("Comando no disponible todavía: {}", command.name());
         }
     }
+    Ok(0)
+}
+
+/// `start`: abre MITO en el Windows Terminal privado. Si falta alguna herramienta, antes
+/// pasa por el bootstrap (con su bienvenida); si este no termina bien, devuelve su código.
+fn start(
+    engine: &Engine,
+    profile: Option<&str>,
+    console: &Console,
+    operation: &Operation,
+) -> anyhow::Result<i32> {
+    // Nunca se borra el último profile; solo el primer arranque puede no tener ninguno.
+    engine.ensure_default_profile()?;
+    if bootstrap::is_missing(engine.layout()) {
+        let code = bootstrap::run(
+            engine.layout(),
+            bootstrap::Options::default(),
+            console,
+            operation,
+            engine.extensions().downloader.as_ref(),
+        );
+        if code != 0 {
+            return Ok(code);
+        }
+    }
+    mito_terminal::launch(engine, None, Shell::Cmd, profile)?;
     Ok(0)
 }
 

@@ -37,6 +37,8 @@ fn mito() -> Command {
         command.env_remove(variable);
     }
     command.env("NO_PROXY", "127.0.0.1,localhost");
+    // Las raíces temporales superan los 32 caracteres: el límite se sube para las pruebas.
+    command.env("MITO_ROOT_PATH_LIMIT", "1000");
     command
 }
 
@@ -241,9 +243,6 @@ fn los_comandos_de_otras_fases_se_analizan_pero_no_estan_disponibles() {
     let instance = Instance::new();
     for (args, name) in [
         (vec!["ui", "--profile", "p"], "ui"),
-        (vec!["start"], "start"),
-        (vec!["bootstrap"], "bootstrap"),
-        (vec!["terminal", "--profile", "p", "--new"], "terminal"),
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local", "--output", "out"], "release"),
         (
@@ -834,6 +833,7 @@ fn run_cmd(dir: &TempDir, args: &[&str]) -> std::process::Output {
         .arg(dir.path().join("mito.cmd"))
         .args(args)
         .env("NO_COLOR", "1")
+        .env("MITO_ROOT_PATH_LIMIT", "1000")
         .output()
         .unwrap()
 }
@@ -855,12 +855,278 @@ fn mito_cmd_deduce_la_raiz_del_ejecutable_y_propaga_el_codigo_de_salida() {
 }
 
 #[test]
-fn mito_cmd_sin_argumentos_invoca_start() {
+fn mito_cmd_sin_argumentos_invoca_start_que_pide_preparar_las_herramientas() {
     let dir = installed_instance();
     let output = run_cmd(&dir, &[]);
-    assert_eq!(output.status.code(), Some(1));
-    assert_eq!(
-        String::from_utf8_lossy(&output.stderr).trim(),
-        "MITO: Comando no disponible todavía: start"
+    // Sin consola interactiva la bienvenida cancela (código 2) y no se crea nada.
+    assert_eq!(output.status.code(), Some(2));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Bienvenido a MITO (My Integrated Terminal Orchestrator)"));
+    assert!(stdout.contains("  - Windows Terminal 1.24.11911.0"));
+    assert!(stdout.contains("Preparación cancelada."));
+    assert!(!dir.path().join(r"core\tools").exists());
+}
+
+// --- bootstrap, start y terminal ----------------------------------------------------
+
+/// Escribe `core/bootstrap.lock.json` con una sola herramienta `windows-terminal`.
+fn write_terminal_lock(instance: &Instance, artifact_url: Option<(&str, &[u8])>) {
+    let artifacts = match artifact_url {
+        Some((url, bytes)) => json!([{
+            "fileName": "WindowsTerminal.exe", "url": url, "sha256": sha256(bytes),
+            "install": {"type": "file", "target": "WindowsTerminal.exe"}
+        }]),
+        None => json!([]),
+    };
+    let lock = json!({"schema": 1, "tools": [{
+        "id": "windows-terminal", "version": "1.0",
+        "required": ["WindowsTerminal.exe"], "artifacts": artifacts
+    }]});
+    fs::create_dir_all(instance.root().join("core")).unwrap();
+    fs::write(
+        instance.root().join("core/bootstrap.lock.json"),
+        serde_json::to_vec_pretty(&lock).unwrap(),
+    )
+    .unwrap();
+}
+
+/// Instala un «Windows Terminal» de prueba (un ejecutable real que termina enseguida).
+fn install_fake_terminal(instance: &Instance) {
+    let folder = instance.root().join(r"core\tools\windows-terminal");
+    fs::create_dir_all(&folder).unwrap();
+    let system = std::env::var("SystemRoot").unwrap();
+    fs::copy(
+        Path::new(&system).join(r"System32\whoami.exe"),
+        folder.join("WindowsTerminal.exe"),
+    )
+    .unwrap();
+    fs::write(folder.join(".mito-tool.json"), "{\"version\": \"1.0\"}").unwrap();
+}
+
+#[test]
+fn bootstrap_preview_welcome_muestra_la_bienvenida_sin_crear_nada() {
+    let instance = Instance::new();
+    instance
+        .mito()
+        .args(["bootstrap", "--preview-welcome"])
+        .write_stdin("s\n")
+        .assert()
+        .success()
+        .stdout(contains(
+            "Bienvenido a MITO (My Integrated Terminal Orchestrator)",
+        ))
+        .stdout(contains("  - 7-Zip 26.02"))
+        .stdout(contains(
+            "  - innounp (extracción de instaladores Inno Setup) 2.71.1",
+        ))
+        .stdout(contains(
+            "Vista previa terminada. No se ha descargado ni preparado ninguna herramienta.",
+        ));
+    assert!(!instance.root().join("core").exists());
+    assert!(!instance.root().join("logs").exists());
+}
+
+#[test]
+fn bootstrap_cancelado_sale_con_2_y_no_crea_herramientas() {
+    let instance = Instance::new();
+    write_terminal_lock(&instance, Some(("http://127.0.0.1:9/x", b"x")));
+    instance
+        .mito()
+        .arg("bootstrap")
+        .write_stdin("no\n")
+        .assert()
+        .code(2)
+        .stdout(contains(
+            "Preparación cancelada. Puedes volver a ejecutar mito.cmd cuando quieras.",
+        ));
+    assert!(!instance.root().join(r"core\tools").exists());
+}
+
+#[test]
+fn bootstrap_aprobado_descarga_verifica_e_instala_desde_un_servidor_local() {
+    let instance = Instance::new();
+    let body = b"WT de prueba".to_vec();
+    let base = serve(body.clone());
+    write_terminal_lock(
+        &instance,
+        Some((&format!("{base}/WindowsTerminal.exe"), &body)),
     );
+    instance
+        .mito()
+        .args(["bootstrap", "--approved"])
+        .assert()
+        .success()
+        .stdout(contains("Preparando windows-terminal 1.0…"));
+    let folder = instance.root().join(r"core\tools\windows-terminal");
+    assert_eq!(fs::read(folder.join("WindowsTerminal.exe")).unwrap(), body);
+    assert!(folder.join(".portable").is_file());
+    assert_eq!(
+        fs::read_to_string(folder.join(".mito-tool.json")).unwrap(),
+        "{\n  \"version\": \"1.0\"\n}\n"
+    );
+    assert!(
+        instance
+            .root()
+            .join("core/state/bootstrap-tools.json")
+            .is_file()
+    );
+    // Con todo listo, otra pasada no descarga ni pregunta.
+    instance
+        .mito()
+        .arg("bootstrap")
+        .assert()
+        .success()
+        .stdout(contains("Bienvenido").not());
+}
+
+#[test]
+fn bootstrap_con_un_hash_incorrecto_sale_con_1_y_no_publica_nada() {
+    let instance = Instance::new();
+    let base = serve(b"otro contenido".to_vec());
+    write_terminal_lock(
+        &instance,
+        Some((&format!("{base}/WindowsTerminal.exe"), b"el esperado")),
+    );
+    instance
+        .mito()
+        .args(["bootstrap", "--approved"])
+        .assert()
+        .code(1)
+        .stderr(contains("MITO: "))
+        .stderr(contains("MITO: log: "));
+    assert!(
+        !instance
+            .root()
+            .join(r"core\tools\windows-terminal")
+            .exists()
+    );
+}
+
+#[test]
+fn start_sin_herramientas_pasa_por_la_bienvenida_y_cancela_con_2() {
+    let instance = Instance::new();
+    instance
+        .mito()
+        .arg("start")
+        .write_stdin("")
+        .assert()
+        .code(2)
+        .stdout(contains("Bienvenido a MITO"));
+    // El primer arranque crea el profile `default` antes de preparar nada.
+    assert!(instance.root().join("profiles/default.json").is_file());
+}
+
+#[test]
+fn start_con_el_terminal_listo_genera_los_ajustes_y_lo_lanza() {
+    let instance = Instance::new();
+    write_terminal_lock(&instance, None);
+    install_fake_terminal(&instance);
+    instance
+        .mito()
+        .args(["start", "--profile", "default"])
+        .assert()
+        .success();
+    let settings = instance
+        .root()
+        .join(r"core\tools\windows-terminal\settings\settings.json");
+    let data: serde_json::Value = serde_json::from_slice(&fs::read(settings).unwrap()).unwrap();
+    let names: Vec<&str> = data["profiles"]["list"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|item| item["hidden"] == json!(false))
+        .map(|item| item["name"].as_str().unwrap())
+        .collect();
+    assert_eq!(names, ["CMD (default)", "PowerShell (default)", "MITO"]);
+    assert_eq!(
+        fs::read_to_string(instance.root().join("core/state/terminal-profile.json")).unwrap(),
+        "\"default\"\n"
+    );
+    assert!(
+        instance
+            .root()
+            .join(r"core\assets\branding\mito.ico")
+            .is_file()
+    );
+}
+
+#[test]
+fn start_con_un_profile_inexistente_falla() {
+    let instance = Instance::new();
+    write_terminal_lock(&instance, None);
+    install_fake_terminal(&instance);
+    instance
+        .mito()
+        .args(["start", "--profile", "no-existe"])
+        .assert()
+        .code(1)
+        .stderr(contains("MITO: "));
+}
+
+#[test]
+fn terminal_sin_windows_terminal_falla_con_el_mensaje_del_original() {
+    let instance = Instance::new();
+    instance.ok(&["profile", "create", "dev"]);
+    instance
+        .mito()
+        .args(["terminal", "--profile", "dev"])
+        .assert()
+        .code(1)
+        .stderr("MITO: Falta Windows Terminal portable. Ejecuta mito.cmd bootstrap.\n");
+}
+
+#[test]
+fn terminal_abre_una_pestana_del_profile_en_cmd_o_powershell() {
+    let instance = Instance::new();
+    install_fake_terminal(&instance);
+    instance.ok(&["profile", "create", "dev"]);
+    instance
+        .mito()
+        .args([
+            "terminal",
+            "--profile",
+            "dev",
+            "--type",
+            "powershell",
+            "--new",
+        ])
+        .assert()
+        .success();
+    instance
+        .mito()
+        .args(["terminal", "--profile", "dev"])
+        .assert()
+        .success();
+    let data: serde_json::Value = serde_json::from_slice(
+        &fs::read(
+            instance
+                .root()
+                .join(r"core\tools\windows-terminal\settings\settings.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(data["profiles"]["list"][0]["name"], "CMD (dev)");
+}
+
+#[test]
+fn start_y_bootstrap_se_bloquean_con_una_raiz_demasiado_larga() {
+    if mito_core::path_limit::long_paths_enabled() {
+        // Con las rutas largas de Windows activadas no hay nada que bloquear.
+        return;
+    }
+    let instance = Instance::new();
+    for name in ["start", "bootstrap"] {
+        let mut command = instance.mito();
+        command.env_remove("MITO_ROOT_PATH_LIMIT");
+        command
+            .arg(name)
+            .write_stdin("\n")
+            .assert()
+            .code(1)
+            .stderr(contains(
+                "La carpeta de MITO tiene una ruta demasiado larga (",
+            ));
+    }
+    assert!(!instance.root().join("core").exists());
 }

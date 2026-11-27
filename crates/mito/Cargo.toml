@@ -17,9 +17,14 @@ mito-core.workspace = true
 mito-i18n.workspace = true
 mito-engine.workspace = true
 mito-terminal.workspace = true
+mito-transfer.workspace = true
 mito-tui.workspace = true
 mito-mcp.workspace = true
+mito-win.workspace = true
+serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true
@@ -27,8 +32,5 @@ workspace = true
 [dev-dependencies]
 assert_cmd.workspace = true
 insta.workspace = true
-mito-transfer.workspace = true
 predicates.workspace = true
-sha2.workspace = true
-tempfile.workspace = true
 zip.workspace = true

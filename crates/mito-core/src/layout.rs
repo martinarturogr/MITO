@@ -111,6 +111,46 @@ impl Layout {
     pub fn commands(&self) -> PathBuf {
         self.core().join("commands")
     }
+
+    /// `core/bootstrap.lock.json`: herramientas privadas fijadas por SHA-256 (ADR 0010).
+    pub fn bootstrap_lock(&self) -> PathBuf {
+        self.core().join("bootstrap.lock.json")
+    }
+
+    /// `core/assets/branding/mito.ico`: icono de MITO.
+    pub fn branding_icon(&self) -> PathBuf {
+        self.core().join("assets").join("branding").join("mito.ico")
+    }
+
+    /// `core/tools/7zip/7z.exe`: extractor privado de 7z, RAR y CAB.
+    pub fn sevenzip_exe(&self) -> PathBuf {
+        self.tools().join("7zip").join("7z.exe")
+    }
+
+    /// `core/tools/innounp/innounp.exe`: extractor privado de Inno Setup.
+    pub fn innounp_exe(&self) -> PathBuf {
+        self.tools().join("innounp").join("innounp.exe")
+    }
+
+    /// `core/tools/windows-terminal/`: Windows Terminal portable privado.
+    pub fn windows_terminal(&self) -> PathBuf {
+        self.tools().join("windows-terminal")
+    }
+
+    /// `core/tools/windows-terminal/WindowsTerminal.exe`: el ejecutable verificado.
+    pub fn windows_terminal_exe(&self) -> PathBuf {
+        self.windows_terminal().join("WindowsTerminal.exe")
+    }
+
+    /// `core/tools/windows-terminal/YitoTerminal.exe`: copia con el icono de MITO.
+    pub fn branded_terminal_exe(&self) -> PathBuf {
+        self.windows_terminal().join("YitoTerminal.exe")
+    }
+
+    /// `core/bin/mito.exe`: el ejecutable de MITO de esta instancia.
+    pub fn mito_exe(&self) -> PathBuf {
+        self.bin().join("mito.exe")
+    }
 }
 
 #[cfg(test)]

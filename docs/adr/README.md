@@ -14,3 +14,4 @@ sustituye por otro nuevo que lo indique.
 | [0007](0007-solo-log-local.md) | Solo log local, sin telemetría remota | Aceptado |
 | [0008](0008-criterios-del-port-y-kernel.md) | Criterios del port y kernel compartido | Aceptado |
 | [0009](0009-motor-con-puntos-de-extension.md) | Motor con puntos de extensión para fases posteriores | Aceptado |
+| [0010](0010-bootstrap-en-mito-exe.md) | Bootstrap dentro de mito.exe | Aceptado |

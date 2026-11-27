@@ -2,6 +2,7 @@
 #![forbid(unsafe_code)]
 
 mod app;
+mod bootstrap;
 mod cli;
 mod console;
 mod doctor;
