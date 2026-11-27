@@ -41,7 +41,7 @@ pub enum Command {
         profile: Option<String>,
     },
     /// Preparar herramientas privadas
-    Bootstrap,
+    Bootstrap(BootstrapArgs),
     /// Listar todos los componentes instalados
     Installed,
     /// Mostrar las carpetas de diagnóstico local
@@ -134,7 +134,7 @@ impl Command {
         match self {
             Self::Ui { .. } => "ui",
             Self::Start { .. } => "start",
-            Self::Bootstrap => "bootstrap",
+            Self::Bootstrap(_) => "bootstrap",
             Self::Installed => "installed",
             Self::Logs => "logs",
             Self::PocketoolRun(_) => "pocketool-run",
@@ -156,6 +156,17 @@ impl Command {
             Self::Release(_) => "release",
         }
     }
+}
+
+/// Argumentos de `bootstrap` (los parámetros del lanzador original).
+#[derive(Debug, Clone, Copy, Args)]
+pub struct BootstrapArgs {
+    /// Preparar sin pedir confirmación (lo usa el actualizador)
+    #[arg(long)]
+    pub approved: bool,
+    /// Mostrar la bienvenida sin descargar ni preparar nada
+    #[arg(long)]
+    pub preview_welcome: bool,
 }
 
 /// Argumentos de `pocketool-run`.

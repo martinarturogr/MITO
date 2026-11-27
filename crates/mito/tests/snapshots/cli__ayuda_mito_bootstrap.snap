@@ -4,7 +4,9 @@ expression: text
 ---
 Preparar herramientas privadas
 
-Usage: mito bootstrap
+Usage: mito bootstrap [OPTIONS]
 
 Options:
-  -h, --help  Print help
+      --approved         Preparar sin pedir confirmación (lo usa el actualizador)
+      --preview-welcome  Mostrar la bienvenida sin descargar ni preparar nada
+  -h, --help             Print help

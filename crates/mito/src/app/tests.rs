@@ -16,7 +16,7 @@ use mito_engine::{Downloader, Engine, Extensions, Jobs, LaunchCommand};
 use serde_json::json;
 use zip::write::SimpleFileOptions;
 
-use super::{OWNED_PAUSE, dispatch};
+use super::{OWNED_PAUSE, dispatch_with};
 use crate::cli::Cli;
 use crate::console::testing::console;
 
@@ -148,12 +148,15 @@ fn cli(rig: &Rig, args: &[&str], stdin: &str) -> Outcome {
     let parsed = Cli::try_parse_from(std::iter::once("mito").chain(args.iter().copied())).unwrap();
     let command = parsed.command.unwrap();
     let (console, out, err) = console(stdin);
-    let code = dispatch(
+    // Las rutas largas de Windows se dan por activadas: la comprobación del límite de la
+    // raíz tiene sus propias pruebas más abajo.
+    let code = dispatch_with(
         &rig.engine,
         &command,
         &console,
         &Operation::silent(),
         &AtomicBool::new(false),
+        &|| true,
     );
     Outcome {
         code,
@@ -298,9 +301,6 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
     let rig = rig(0, false);
     for (args, name) in [
         (vec!["ui"], "ui"),
-        (vec!["start"], "start"),
-        (vec!["bootstrap"], "bootstrap"),
-        (vec!["terminal", "--profile", "one"], "terminal"),
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local"], "release"),
         (vec!["shortcut", "--profile", "one"], "shortcut"),
@@ -357,12 +357,13 @@ fn ctrl_c_sale_con_130() {
     let rig = rig(0, false);
     let parsed = Cli::try_parse_from(["mito", "installed"]).unwrap();
     let (console, out, err) = console("");
-    let code = dispatch(
+    let code = dispatch_with(
         &rig.engine,
         &parsed.command.unwrap(),
         &console,
         &Operation::silent(),
         &AtomicBool::new(true),
+        &|| true,
     );
     assert_eq!(code, 130);
     assert_eq!(err.text(), "Operación interrumpida\n");
@@ -376,4 +377,92 @@ fn los_errores_de_dominio_salen_sin_cadena_de_causas() {
     assert_eq!(result.code, 1);
     assert_eq!(result.err.lines().count(), 1);
     assert!(result.err.starts_with("MITO: "));
+}
+
+// --- límite de la ruta de la raíz (test_path_limit.py) -------------------------------
+
+/// Instancia cuya raíz supera los 32 caracteres.
+fn long_root() -> (tempfile::TempDir, Engine) {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().join("una-carpeta-con-un-nombre-bastante-largo");
+    fs::create_dir_all(&root).unwrap();
+    let engine = Engine::new(&root);
+    assert!(mito_core::path_limit::normalized(engine.root()).1 > 32);
+    (dir, engine)
+}
+
+fn run_long(engine: &Engine, args: &[&str], stdin: &str, long_paths: bool) -> Outcome {
+    let parsed = Cli::try_parse_from(std::iter::once("mito").chain(args.iter().copied())).unwrap();
+    let (console, out, err) = console(stdin);
+    let code = dispatch_with(
+        engine,
+        &parsed.command.unwrap(),
+        &console,
+        &Operation::silent(),
+        &AtomicBool::new(false),
+        &move || long_paths,
+    );
+    Outcome {
+        code,
+        out: out.text(),
+        err: err.text(),
+    }
+}
+
+#[test]
+fn el_gestor_start_y_bootstrap_se_bloquean_con_una_raiz_demasiado_larga() {
+    let (_dir, engine) = long_root();
+    let root = engine.root().display().to_string();
+    for args in [["ui"], ["start"], ["bootstrap"]] {
+        let result = run_long(&engine, &args, "\n", false);
+        assert_eq!(result.code, 1, "{args:?}");
+        assert!(
+            result
+                .err
+                .starts_with("\nMITO: La carpeta de MITO tiene una ruta demasiado larga ("),
+            "{}",
+            result.err
+        );
+        assert!(result.err.contains(&format!("máximo 32): {root}\n")));
+        assert!(result.err.ends_with("y vuelve a ejecutar mito.cmd.\n\n"));
+        assert_eq!(result.out, "Pulsa Intro para cerrar");
+        // No llega a preparar la instancia.
+        assert!(!engine.layout().profiles().exists(), "{args:?}");
+        assert!(!engine.layout().core().exists(), "{args:?}");
+        let log = fs::read_to_string(engine.layout().logs().join("mito.log")).unwrap();
+        let last: serde_json::Value = serde_json::from_str(log.lines().last().unwrap()).unwrap();
+        assert_eq!(last["level"], "error");
+        assert_eq!(last["phase"], "startup.path-limit");
+        assert_eq!(last["operation"], format!("cli.{}", args[0]));
+    }
+}
+
+#[test]
+fn con_rutas_largas_activadas_nada_se_bloquea() {
+    let (_dir, engine) = long_root();
+    let result = run_long(&engine, &["bootstrap"], "", true);
+    assert_eq!(result.code, crate::bootstrap::CANCELLED);
+    assert!(result.out.contains("Bienvenido a MITO"));
+}
+
+#[test]
+fn las_demas_ordenes_no_se_bloquean_aunque_la_raiz_sea_larga() {
+    let (_dir, engine) = long_root();
+    let result = run_long(&engine, &["logs"], "", false);
+    assert_eq!(result.code, 0);
+    assert_eq!(result.out.lines().count(), 2);
+    assert!(!engine.layout().logs().exists());
+    for args in [
+        vec!["installed"],
+        vec!["profile", "list"],
+        vec!["bootstrap", "--preview-welcome"],
+        vec!["bootstrap", "--approved"],
+    ] {
+        let result = run_long(&engine, &args, "n\n", false);
+        assert!(
+            !result.err.contains("ruta demasiado larga"),
+            "{args:?}: {}",
+            result.err
+        );
+    }
 }

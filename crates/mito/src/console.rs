@@ -1,7 +1,25 @@
 //! Entrada y salida de la consola (`print` e `input` del original).
 
 use std::cell::RefCell;
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, IsTerminal as _, Write};
+
+/// Colores de texto de la consola (los que usa la bienvenida del bootstrap).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Color {
+    /// Cian (título).
+    Cyan,
+    /// Amarillo (aviso).
+    Yellow,
+}
+
+impl Color {
+    fn escape(self) -> &'static str {
+        match self {
+            Self::Cyan => "\x1b[36m",
+            Self::Yellow => "\x1b[33m",
+        }
+    }
+}
 
 /// Salidas estándar y entrada de un comando. Los métodos toman `&self` para poder
 /// usarse desde los callbacks del motor.
@@ -9,16 +27,22 @@ pub struct Console {
     out: RefCell<Box<dyn Write>>,
     err: RefCell<Box<dyn Write>>,
     input: RefCell<Box<dyn BufRead>>,
+    color: bool,
 }
 
 impl Console {
     /// Consola sobre `stdout`, `stderr` y `stdin` del proceso.
     pub fn stdio() -> Self {
-        Self::new(
+        let mut console = Self::new(
             Box::new(io::stdout()),
             Box::new(io::stderr()),
             Box::new(io::BufReader::new(io::stdin())),
-        )
+        );
+        // Colores solo en una consola real que admita secuencias ANSI y sin `NO_COLOR`.
+        console.color = std::env::var_os("NO_COLOR").is_none()
+            && io::stdout().is_terminal()
+            && mito_win::console::enable_virtual_terminal();
+        console
     }
 
     /// Consola con flujos propios (pruebas).
@@ -27,7 +51,24 @@ impl Console {
             out: RefCell::new(out),
             err: RefCell::new(err),
             input: RefCell::new(input),
+            color: false,
         }
+    }
+
+    /// Escribe una línea en stdout con `color` si la consola lo admite.
+    pub fn colored_line(&self, text: impl AsRef<str>, color: Color) {
+        if self.color {
+            self.line(format!("{}{}\x1b[0m", color.escape(), text.as_ref()));
+        } else {
+            self.line(text);
+        }
+    }
+
+    /// Fuerza los colores (pruebas).
+    #[cfg(test)]
+    pub fn with_color(mut self) -> Self {
+        self.color = true;
+        self
     }
 
     /// Escribe una línea en stdout. Un fallo de escritura (tubería cerrada) se ignora,

@@ -310,11 +310,20 @@ impl Engine {
         Ok(current.records)
     }
 
-    fn sevenzip_path(&self) -> Option<PathBuf> {
+    /// Ruta de `7z.exe`: la inyectada en [`crate::Extensions::sevenzip`] o, si existe,
+    /// `core/tools/7zip/7z.exe` (preparado por el bootstrap).
+    pub fn sevenzip_path(&self) -> Option<PathBuf> {
         self.extensions().sevenzip.clone().or_else(|| {
             let path = self.layout().sevenzip_exe();
             path.is_file().then_some(path)
         })
+    }
+
+    /// Ruta de `innounp.exe` si existe `core/tools/innounp/innounp.exe` (preparado por el
+    /// bootstrap). El extractor de Inno Setup lo conecta F7 con [`crate::Extensions::inno`].
+    pub fn innounp_path(&self) -> Option<PathBuf> {
+        let path = self.layout().innounp_exe();
+        path.is_file().then_some(path)
     }
 
     /// Prepara un componente en `destination` (una carpeta nueva dentro de

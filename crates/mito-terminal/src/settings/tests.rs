@@ -428,3 +428,19 @@ fn el_motor_regenera_los_ajustes_al_crear_y_borrar_profiles() {
     engine.delete_profile("java21").unwrap();
     assert_eq!(settings(&engine)["newTabMenu"].as_array().unwrap().len(), 3);
 }
+
+#[test]
+fn el_motor_conoce_las_rutas_de_7zip_y_de_innounp_una_vez_preparadas() {
+    let (_dir, engine) = instance();
+    assert_eq!(engine.sevenzip_path(), None);
+    assert_eq!(engine.innounp_path(), None);
+    for (path, name) in [
+        (engine.layout().sevenzip_exe(), "7z.exe"),
+        (engine.layout().innounp_exe(), "innounp.exe"),
+    ] {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(&path, name).unwrap();
+    }
+    assert_eq!(engine.sevenzip_path(), Some(engine.layout().sevenzip_exe()));
+    assert_eq!(engine.innounp_path(), Some(engine.layout().innounp_exe()));
+}
