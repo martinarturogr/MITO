@@ -196,7 +196,7 @@ fn validate(stdout: &str, destination: &Path, limits: &Limits) -> Result<()> {
     Ok(())
 }
 
-fn is_link(metadata: &fs::Metadata) -> bool {
+pub(super) fn is_link(metadata: &fs::Metadata) -> bool {
     if metadata.file_type().is_symlink() {
         return true;
     }
