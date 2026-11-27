@@ -355,8 +355,9 @@ fn reintenta_408_y_429_y_avisa_con_el_texto_del_original() {
     let sink = Arc::clone(&notes);
     let operation = Operation::new(move |state| {
         let mut notes = sink.lock().unwrap();
-        if !state.note.is_empty() && notes.last() != Some(&state.note) {
-            notes.push(state.note.clone());
+        let note = state.note.to_string();
+        if !note.is_empty() && notes.last() != Some(&note) {
+            notes.push(note);
         }
     });
     download(

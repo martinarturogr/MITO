@@ -625,7 +625,7 @@ fn el_mensaje_de_progreso_usa_el_texto_del_original() {
     let archive = dir.path().join("download");
     fs::write(&archive, b"x").unwrap();
     let logged = std::cell::RefCell::new(Vec::new());
-    let log = |text: &str| logged.borrow_mut().push(text.to_owned());
+    let log = |message: mito_core::Message| logged.borrow_mut().push(message.to_string());
     let options = ExtractOptions {
         log: Some(&log),
         ..ExtractOptions::default()

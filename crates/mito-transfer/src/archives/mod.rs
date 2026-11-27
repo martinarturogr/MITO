@@ -78,7 +78,7 @@ pub struct ExtractOptions<'a> {
     /// Extractor de MSI (F7). Sin él, un `.msi` es un formato no soportado.
     pub msi: Option<Delegate<'a>>,
     /// Recibe los mensajes de progreso (`Extrayendo {p1}`).
-    pub log: Option<&'a dyn Fn(&str)>,
+    pub log: Option<&'a dyn Fn(Message)>,
     /// Límites de extracción; `None` usa los del original.
     pub limits: Option<Limits>,
 }
@@ -135,9 +135,7 @@ pub fn extract(
     options: &ExtractOptions<'_>,
 ) -> Result<Extraction> {
     if let Some(log) = options.log {
-        log(&Message::new("Extrayendo {p1}")
-            .arg("p1", filename)
-            .to_string());
+        log(Message::new("Extrayendo {p1}").arg("p1", filename));
     }
     let limits = options.limits.unwrap_or_default();
     let suffix = suffix(filename);

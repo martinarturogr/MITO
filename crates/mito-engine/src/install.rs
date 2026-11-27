@@ -18,13 +18,13 @@ use mito_core::{Message, Operation};
 use mito_transfer::archives::{ExtractOptions, Extraction};
 use serde_json::{Value, json};
 
-use crate::Log;
 use crate::engine::Engine;
 use crate::environment::bins;
 use crate::error::{Error, Result, bail, io_error, step};
 use crate::fsutil::{copy_file, create_dir_all, is_link};
 use crate::profiles::Profile;
 use crate::record::{Record, Records, effective};
+use crate::{Log, LogLine};
 
 /// Opciones de [`Engine::install`].
 #[derive(Default)]
@@ -98,10 +98,10 @@ impl Planner<'_> {
         let effective = effective(&manifest)?;
         if effective.get("post_install").is_some_and(py_truthy) {
             (self.log)(
-                &Message::new("{p0}: {p2} omitido por la política general de MITO")
+                Message::new("{p0}: {p2} omitido por la política general de MITO")
                     .arg("p0", &key)
                     .arg("p2", "post_install")
-                    .to_string(),
+                    .into(),
             );
         }
         let status = compatibility(&key, &Manifest::new(manifest.clone()));
@@ -300,11 +300,11 @@ impl Engine {
             operation,
         )?;
         match options.profile {
-            Some(profile) => log(&Message::new("Profile {p1} preparado")
+            Some(profile) => log(Message::new("Profile {p1} preparado")
                 .arg("p1", profile)
-                .to_string()),
+                .into()),
             None => {
-                log(&Message::new("Componente instalado. Puedes activarlo en Inicio.").to_string());
+                log(Message::new("Componente instalado. Puedes activarlo en Inicio.").into());
             }
         }
         Ok(current.records)
@@ -354,20 +354,19 @@ impl Engine {
             let number = index + 1;
             if expected.is_none() {
                 log(
-                    &Message::new("{p0}: descarga sin hash declarado ({p2}/{p4})")
+                    Message::new("{p0}: descarga sin hash declarado ({p2}/{p4})")
                         .arg("p0", key)
                         .arg("p2", number)
                         .arg("p4", total_urls)
-                        .to_string(),
+                        .into(),
                 );
             }
             let text = Message::new("Descargando {p1} {p3} ({p5}/{p7})")
                 .arg("p1", key)
                 .arg("p3", &version)
                 .arg("p5", number)
-                .arg("p7", total_urls)
-                .to_string();
-            log(&text);
+                .arg("p7", total_urls);
+            log(text.clone().into());
             operation.phase("DESCARGANDO", text, true);
             let archive = stage.join(format!("download-{index}"));
             step(layout, "install", "download-and-hash", Some(key), || {
@@ -415,7 +414,7 @@ impl Engine {
                     .msi
                     .as_deref()
                     .map(|f| f as &dyn Fn(&Path, &Path) -> mito_transfer::Result<()>),
-                log: Some(log),
+                log: Some(&|message| log(message.into())),
                 limits: None,
             };
             let extracted = step(layout, "install", "extract", Some(key), || {
@@ -439,7 +438,7 @@ impl Engine {
                     source.file_name().unwrap_or_default().to_string_lossy(),
                 ));
             }
-            log(&Message::new("Preparando {p1}").arg("p1", key).to_string());
+            log(Message::new("Preparando {p1}").arg("p1", key).into());
             let files = list_files(&source)?;
             for relative in &files {
                 if target.join(relative).exists() {
@@ -451,12 +450,11 @@ impl Engine {
             let total = files.len();
             let moving = Message::new("Moviendo {p1} archivos de {p2} a su carpeta. Con muchos archivos este paso puede tardar varios minutos; MITO sigue trabajando.")
                 .arg("p1", total)
-                .arg("p2", key)
-                .to_string();
+                .arg("p2", key);
             let mut copied = 0usize;
             step(layout, "install", "copy-payload", Some(key), || {
                 operation.phase("PREPARANDO ARCHIVOS", moving.clone(), true);
-                log(&moving);
+                log(LogLine::long_step(moving, true));
                 // Esperar al antivirus compensa mientras cuesta menos que el
                 // respaldo archivo a archivo (~0,2 s por archivo), con tope de 30 s.
                 #[expect(clippy::cast_precision_loss, reason = "solo estima una espera")]
@@ -489,18 +487,20 @@ impl Engine {
                         operation,
                     )
                 };
-                log(&Message::new("Archivos {p1}: {p2}/{p3}")
-                    .arg("p1", key)
-                    .arg("p2", copied)
-                    .arg("p3", total)
-                    .to_string());
+                log(LogLine::long_step(
+                    Message::new("Archivos {p1}: {p2}/{p3}")
+                        .arg("p1", key)
+                        .arg("p2", copied)
+                        .arg("p3", total),
+                    false,
+                ));
                 result
             })?;
             operation.check()?;
         }
         operation.phase(
             "PREPARANDO ARCHIVOS",
-            Message::new("Preparando {p1}").arg("p1", key).to_string(),
+            Message::new("Preparando {p1}").arg("p1", key),
             true,
         );
         operation.check()?;
@@ -512,7 +512,7 @@ impl Engine {
             self.extensions().hooks.installer(key, &m, &payload)
         })?;
         operation.check()?;
-        log(&Message::new("Validando {p1}").arg("p1", key).to_string());
+        log(Message::new("Validando {p1}").arg("p1", key).into());
         step(layout, "install", "validate", Some(key), || {
             for bin in bins(&m)? {
                 if !inside(&payload, &bin.executable)?.is_file() {
@@ -531,18 +531,18 @@ impl Engine {
                     .arg("p1", destination.display()),
             );
         }
-        log(&Message::new(
+        log(Message::new(
             "Publicando {p1}; el antivirus puede retrasar este paso con muchos archivos",
         )
         .arg("p1", key)
-        .to_string());
+        .into());
         step(layout, "install", "publish", Some(key), || {
             fs::rename(&payload, destination).map_err(io_error(destination))
         })?;
-        log(&Message::new("Instalado {p1} {p3}")
+        log(Message::new("Instalado {p1} {p3}")
             .arg("p1", key)
             .arg("p3", &version)
-            .to_string());
+            .into());
         Ok(())
     }
 }
@@ -595,11 +595,11 @@ fn copy_tree_by_file(
         }
         *copied += 1;
         if (*copied).is_multiple_of(1000) && *copied < total {
-            log(&Message::new("Archivos {p1}: {p2}/{p3}")
+            log(Message::new("Archivos {p1}: {p2}/{p3}")
                 .arg("p1", key)
                 .arg("p2", *copied)
                 .arg("p3", total)
-                .to_string());
+                .into());
         }
         if (*copied).is_multiple_of(50) || *copied == total {
             operation.transfer(*copied as u64, Some(total as u64), "files");

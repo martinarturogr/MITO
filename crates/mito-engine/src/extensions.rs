@@ -141,7 +141,7 @@ pub trait Host: Send + Sync {
         _key: &str,
         _record: &Record,
         _links: &mut BTreeMap<PathBuf, Option<Vec<u8>>>,
-        _log: &dyn Fn(&str),
+        _log: crate::Log<'_>,
     ) -> Result<()> {
         Ok(())
     }
@@ -165,7 +165,7 @@ pub trait Host: Send + Sync {
         &self,
         _engine: &Engine,
         _installation: &str,
-        _log: &dyn Fn(&str),
+        _log: crate::Log<'_>,
     ) -> Result<()> {
         Ok(())
     }

@@ -496,7 +496,12 @@ fn install(
         confirm_unverified: Some(&confirm),
         ..InstallOptions::default()
     };
-    engine.install(&[app], &options, &|line| console.line(line), operation)?;
+    engine.install(
+        &[app],
+        &options,
+        &|line| console.line(line.message.to_string()),
+        operation,
+    )?;
     Ok(())
 }
 

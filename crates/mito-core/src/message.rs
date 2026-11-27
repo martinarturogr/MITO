@@ -9,7 +9,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Write as _};
 
 /// Plantilla de mensaje con argumentos con nombre (`{p1}`, `{name}`…).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Message {
     template: Cow<'static, str>,
     args: Vec<(Cow<'static, str>, String)>,
@@ -35,6 +35,11 @@ impl Message {
     pub fn with_suffix(mut self, suffix: impl fmt::Display) -> Self {
         self.suffix = suffix.to_string();
         self
+    }
+
+    /// Indica si el mensaje no tiene plantilla ni sufijo.
+    pub fn is_empty(&self) -> bool {
+        self.template.is_empty() && self.suffix.is_empty()
     }
 
     /// Texto añadido tras la traducción (vacío si no hay).
@@ -103,6 +108,18 @@ impl Message {
         }
         out.push_str(&self.suffix);
         Some(out)
+    }
+}
+
+impl From<&'static str> for Message {
+    fn from(template: &'static str) -> Self {
+        Self::new(template)
+    }
+}
+
+impl From<String> for Message {
+    fn from(template: String) -> Self {
+        Self::new(template)
     }
 }
 
@@ -198,6 +215,15 @@ mod tests {
             Message::new("Instalación cancelada").to_string(),
             "Instalación cancelada"
         );
+    }
+
+    #[test]
+    fn por_defecto_esta_vacio_y_las_cadenas_son_plantillas() {
+        assert!(Message::default().is_empty());
+        assert!(!Message::from("x").is_empty());
+        assert!(!Message::default().with_suffix("x").is_empty());
+        assert_eq!(Message::from(String::from("a {b}")).template(), "a {b}");
+        assert_eq!(Message::from("a").args().len(), 0);
     }
 
     #[test]
