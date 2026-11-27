@@ -300,7 +300,6 @@ fn un_comando_de_bin_devuelve_el_codigo_del_proceso() {
 fn los_comandos_de_otras_fases_no_estan_disponibles() {
     let rig = rig(0, false);
     for (args, name) in [
-        (vec!["ui"], "ui"),
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local"], "release"),
         (vec!["shortcut", "--profile", "one"], "shortcut"),

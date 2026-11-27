@@ -177,14 +177,21 @@ fn muestra_la_version() {
         .stdout(contains(env!("CARGO_PKG_VERSION")));
 }
 
+/// La interfaz ya no es un comando pendiente: sin una terminal interactiva (aquí la
+/// entrada y la salida van a tuberías) avisa de ello.
 #[test]
-fn sin_argumentos_abre_la_interfaz_que_aun_no_esta_disponible() {
+fn sin_argumentos_y_con_ui_abren_la_interfaz_y_exigen_una_terminal() {
     let instance = Instance::new();
-    instance
-        .mito()
-        .assert()
-        .failure()
-        .stderr("MITO: Comando no disponible todavía: ui\n");
+    for args in [&[][..], &["ui"], &["ui", "--profile", "p"]] {
+        instance
+            .mito()
+            .args(args)
+            .assert()
+            .failure()
+            .stderr("MITO: la interfaz necesita una terminal interactiva\n");
+    }
+    // Antes de abrir la interfaz se prepara el profile por defecto.
+    assert!(instance.root().join("profiles").is_dir());
 }
 
 // --- errores de uso ---------------------------------------------------------------
@@ -242,7 +249,6 @@ fn release_invalido_falla_antes_de_crear_estado() {
 fn los_comandos_de_otras_fases_se_analizan_pero_no_estan_disponibles() {
     let instance = Instance::new();
     for (args, name) in [
-        (vec!["ui", "--profile", "p"], "ui"),
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local", "--output", "out"], "release"),
         (
