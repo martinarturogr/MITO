@@ -570,47 +570,56 @@ fn archivos_sueltos_y_formatos_no_soportados() {
 }
 
 #[test]
-fn msi_e_inno_son_puntos_de_enganche_de_la_fase_f7() {
+fn msi_e_inno_se_despachan_en_el_orden_del_contrato() {
     let dir = tempfile::tempdir().unwrap();
     let archive = dir.path().join("download");
     fs::write(&archive, b"MZ").unwrap();
     let out = dir.path().join("out");
-    // Sin extractor, no se soporta (y nada se copia).
-    let error = extract(&archive, &out, "a.msi", &ExtractOptions::default()).unwrap_err();
-    assert_eq!(
-        error.to_string(),
-        "Formato de archivo todavía no soportado: a.msi"
+    // `.msi` sin base válida: error de msi.dll y nada publicado (paso 3).
+    let error = extract(&archive, &out, "a.MSI", &ExtractOptions::default()).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .starts_with("MSI: Windows database error "),
+        "{error}"
     );
-    let calls = std::cell::RefCell::new(Vec::new());
-    let msi = |a: &Path, d: &Path| {
-        calls
-            .borrow_mut()
-            .push(format!("msi {} {}", a.display(), d.display()));
-        Ok(())
+    assert!(!out.exists());
+    // `innosetup` y `.exe` sin `innounp`: herramienta incompleta (paso 1).
+    let inno = ExtractOptions {
+        innosetup: true,
+        ..ExtractOptions::default()
     };
-    let inno = |_: &Path, _: &Path| {
-        calls.borrow_mut().push("inno".to_owned());
-        Ok(())
+    for name in ["setup.exe", "SETUP.EXE"] {
+        let error = extract(&archive, &out, name, &inno).unwrap_err();
+        assert_eq!(error.to_string(), "Herramienta incompleta: innounp");
+    }
+    // Con una ruta que no es un archivo, igual; la raíz se comprueba antes.
+    let missing = dir.path().join("core/tools/innounp/innounp.exe");
+    let options = ExtractOptions {
+        innounp: Some(&missing),
+        ..ExtractOptions::default()
     };
     let options = ExtractOptions {
         innosetup: true,
-        msi: Some(&msi),
-        inno: Some(&inno),
-        ..ExtractOptions::default()
+        ..options
     };
+    let error = extract(&archive, &out, "setup.exe", &options).unwrap_err();
+    assert_eq!(error.to_string(), "Herramienta incompleta: innounp");
+    let sys = ExtractOptions {
+        inno_root: "{sys}",
+        ..options
+    };
+    let error = extract(&archive, &out, "setup.exe", &sys).unwrap_err();
+    assert_eq!(error.to_string(), "Inno: unsupported root {sys}");
+    assert!(!out.exists());
+    // `innosetup` solo afecta a `.exe`: un `.jar` se copia.
     assert_eq!(
-        extract(&archive, &out, "a.MSI", &options).unwrap(),
-        Extraction::Extracted
+        extract(&archive, &out, "tool.jar", &inno).unwrap(),
+        Extraction::Loose
     );
-    assert_eq!(
-        extract(&archive, &out, "setup.exe", &options).unwrap(),
-        Extraction::Extracted
-    );
-    assert_eq!(calls.borrow().len(), 2);
-    assert_eq!(calls.borrow()[1], "inno");
-    // Sin `innosetup`, un .exe es un archivo suelto.
+    // Sin `innosetup`, un .exe es un archivo suelto, aunque haya `innounp`.
     let plain = ExtractOptions {
-        inno: Some(&inno),
+        innounp: Some(&archive),
         ..ExtractOptions::default()
     };
     assert_eq!(

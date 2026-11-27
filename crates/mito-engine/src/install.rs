@@ -15,7 +15,9 @@ use mito_catalog::{Manifest, array, compatibility, fingerprint};
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::storage::{identifier, inside, write_json};
 use mito_core::{Message, Operation};
-use mito_transfer::archives::{ExtractOptions, Extraction};
+use mito_transfer::archives::{
+    APP, ExtractOptions, Extraction, inno_root, restore_declared_targets,
+};
 use serde_json::{Value, json};
 
 use crate::engine::Engine;
@@ -320,7 +322,7 @@ impl Engine {
     }
 
     /// Ruta de `innounp.exe` si existe `core/tools/innounp/innounp.exe` (preparado por el
-    /// bootstrap). El extractor de Inno Setup lo conecta F7 con [`crate::Extensions::inno`].
+    /// bootstrap). Lo usa el extractor de Inno Setup (`archives::extract` con `innosetup`).
     pub fn innounp_path(&self) -> Option<PathBuf> {
         let path = self.layout().innounp_exe();
         path.is_file().then_some(path)
@@ -394,26 +396,28 @@ impl Engine {
                 };
                 Ok(chosen.unwrap_or_else(|| ".".to_owned()))
             };
-            let extract_dir = positional("extract_dir")?;
+            let mut extract_dir = positional("extract_dir")?;
+            let innosetup = m.get("innosetup").is_some_and(py_truthy);
+            // Scoop: con `innosetup`, una constante de Inno desnuda en `extract_dir`
+            // elige la raíz del instalador a extraer (`innounp -c`) en lugar de una
+            // subcarpeta.
+            let selected = if innosetup {
+                inno_root(&extract_dir).map(str::to_owned)
+            } else {
+                None
+            };
             operation.phase(
                 "PREPARANDO ARCHIVOS",
                 Message::new("Extrayendo {p1}…").arg("p1", key).to_string(),
                 true,
             );
             let sevenzip = self.sevenzip_path();
+            let innounp = self.innounp_path();
             let extractor = ExtractOptions {
                 sevenzip: sevenzip.as_deref(),
-                innosetup: m.get("innosetup").is_some_and(py_truthy),
-                inno: self
-                    .extensions()
-                    .inno
-                    .as_deref()
-                    .map(|f| f as &dyn Fn(&Path, &Path) -> mito_transfer::Result<()>),
-                msi: self
-                    .extensions()
-                    .msi
-                    .as_deref()
-                    .map(|f| f as &dyn Fn(&Path, &Path) -> mito_transfer::Result<()>),
+                innosetup,
+                innounp: innounp.as_deref(),
+                inno_root: selected.as_deref().unwrap_or(APP),
                 log: Some(&|message| log(message.into())),
                 limits: None,
             };
@@ -423,6 +427,9 @@ impl Engine {
                 )?)
             })?;
             operation.check()?;
+            if selected.is_some() && extracted == Extraction::Extracted {
+                ".".clone_into(&mut extract_dir);
+            }
             let source = inside(
                 &expanded,
                 if extracted == Extraction::Extracted {
@@ -497,6 +504,16 @@ impl Engine {
                 result
             })?;
             operation.check()?;
+        }
+        if m.get("innosetup").is_some_and(py_truthy) {
+            // Inno renombra los duplicados (`Editor,1.exe`): se restauran los nombres
+            // declarados en `shortcuts` y `bin` si las copias son idénticas.
+            let mut declared: Vec<String> = array(m.get("shortcuts"))
+                .iter()
+                .filter_map(|shortcut| shortcut.as_array()?.first().map(py_str))
+                .collect();
+            declared.extend(bins(&m)?.into_iter().map(|bin| bin.executable));
+            restore_declared_targets(&payload, &declared)?;
         }
         operation.phase(
             "PREPARANDO ARCHIVOS",

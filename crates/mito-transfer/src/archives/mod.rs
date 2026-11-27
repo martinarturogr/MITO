@@ -6,8 +6,11 @@
 //! - ZIP y `.nupkg`, TAR (`.tar.gz`, `.tar.xz`, `.tar.bz2`): nativos y validados por
 //!   completo antes de escribir.
 //! - 7z y RAR: delegados en el `7z.exe` privado, cuya ruta recibe el llamador.
-//! - MSI, Burn e Inno Setup pertenecen a la fase F7: aquí solo hay puntos de enganche
-//!   ([`ExtractOptions::msi`], [`ExtractOptions::inno`]).
+//! - MSI ([`extract_msi`], con el 7-Zip privado) e Inno Setup ([`extract_inno`], con el
+//!   `innounp` privado) se leen como datos; el instalador nunca se ejecuta.
+//! - Burn ([`extract_burn`]) no tiene rama en [`extract`], como el original: un
+//!   `setup.exe` de Burn sin `innosetup` se copia suelto y solo lo abre el hook
+//!   `Expand-DarkArchive`.
 
 mod burn;
 mod inno;
@@ -25,7 +28,7 @@ use mito_core::Message;
 use mito_core::storage::inside;
 
 pub use burn::extract_burn;
-pub use inno::{APP, extract_inno, inno_root, restore_declared_targets};
+pub use inno::{APP, InnoFile, app_inventory, extract_inno, inno_root, restore_declared_targets};
 pub use msi::extract_msi;
 pub use sevenzip::{extract_7zip, extract_7zip_with};
 pub use tarball::{extract_tar, extract_tar_with, is_tar};
@@ -72,27 +75,37 @@ pub enum Extraction {
     Loose,
 }
 
-/// Extractor delegado (MSI o Inno Setup, F7): recibe el archivo y el destino.
-pub type Delegate<'a> = &'a dyn Fn(&Path, &Path) -> Result<()>;
-
 /// Opciones de [`extract`].
-#[derive(Default)]
 pub struct ExtractOptions<'a> {
-    /// Ruta de `7z.exe` (`core/tools/7zip/7z.exe`). Sin ella, 7z y RAR fallan con
-    /// `Falta el extractor privado 7-Zip; ejecuta bootstrap`.
+    /// Ruta de `7z.exe` (`core/tools/7zip/7z.exe`). Sin ella, 7z, RAR y los CAB de un
+    /// MSI fallan con `Falta el extractor privado 7-Zip; ejecuta bootstrap`.
     pub sevenzip: Option<&'a Path>,
     /// El manifiesto declara `innosetup`: un `.exe` se extrae con `innounp` en lugar de
     /// copiarse.
     pub innosetup: bool,
-    /// Extractor de Inno Setup (F7). Sin él, un `.exe` con `innosetup` es un formato no
-    /// soportado.
-    pub inno: Option<Delegate<'a>>,
-    /// Extractor de MSI (F7). Sin él, un `.msi` es un formato no soportado.
-    pub msi: Option<Delegate<'a>>,
-    /// Recibe los mensajes de progreso (`Extrayendo {p1}`).
+    /// Ruta de `innounp.exe` (`core/tools/innounp/innounp.exe`). Sin ella, un `.exe`
+    /// con `innosetup` falla con `Herramienta incompleta: innounp`.
+    pub innounp: Option<&'a Path>,
+    /// Constante de Inno cuyos archivos se extraen: `{app}` ([`APP`]) o `{code_X}`
+    /// (véase [`inno_root`]).
+    pub inno_root: &'a str,
+    /// Recibe los mensajes de progreso (`Extrayendo {p1}`, `MSI: CAB {p1}/{p2}`…).
     pub log: Option<&'a dyn Fn(Message)>,
     /// Límites de extracción; `None` usa los del original.
     pub limits: Option<Limits>,
+}
+
+impl Default for ExtractOptions<'_> {
+    fn default() -> Self {
+        Self {
+            sevenzip: None,
+            innosetup: false,
+            innounp: None,
+            inno_root: APP,
+            log: None,
+            limits: None,
+        }
+    }
 }
 
 /// Sufijo en minúsculas del nombre de archivo, como `Path(filename).suffix.lower()`.
@@ -127,10 +140,11 @@ fn copy_loose(archive: &Path, destination: &Path, filename: &str) -> Result<Extr
 /// y el contenido de `archive` deciden qué hacer, en este orden (el primero que aplica
 /// gana):
 ///
-/// 1. `innosetup` y `.exe`: extractor de Inno ([`ExtractOptions::inno`]).
+/// 1. `innosetup` y `.exe`: [`extract_inno`] con [`ExtractOptions::innounp`] y
+///    [`ExtractOptions::inno_root`]; sin `innounp`, `Herramienta incompleta: innounp`.
 /// 2. `.jar` o `.ico`: copia íntegra, aunque el contenido sea un ZIP. Un alias
 ///    `#/archivo.zip` cambia el sufijo y sí extrae.
-/// 3. `.msi`: extractor de MSI ([`ExtractOptions::msi`]).
+/// 3. `.msi`: [`extract_msi`] (base leída con `msi.dll`, CAB con el 7-Zip privado).
 /// 4. Contenido ZIP: [`extract_zip`]; si usa un método no soportado, 7-Zip.
 /// 5. Contenido TAR (con o sin gzip/xz/bzip2): [`extract_tar`].
 /// 6. `.7z` o `.rar`, o sin sufijo y con firma de 7z o RAR: [`extract_7zip`].
@@ -152,8 +166,10 @@ pub fn extract(
     let limits = options.limits.unwrap_or_default();
     let suffix = suffix(filename);
     if options.innosetup && suffix == ".exe" {
-        let inno = options.inno.ok_or_else(|| unsupported(filename))?;
-        inno(archive, destination)?;
+        // Una ruta vacía no es un archivo: `extract_inno` comprueba primero la raíz y
+        // después la herramienta (`Herramienta incompleta: innounp`), como el original.
+        let innounp = options.innounp.unwrap_or_else(|| Path::new(""));
+        extract_inno(archive, destination, innounp, options.inno_root)?;
         return Ok(Extraction::Extracted);
     }
     // Los JAR son ZIP, pero deben seguir siendo artefactos Java ejecutables.
@@ -161,8 +177,12 @@ pub fn extract(
         return copy_loose(archive, destination, filename);
     }
     if suffix == ".msi" {
-        let msi = options.msi.ok_or_else(|| unsupported(filename))?;
-        msi(archive, destination)?;
+        let log = |message: Message| {
+            if let Some(log) = options.log {
+                log(message);
+            }
+        };
+        extract_msi(archive, destination, options.sevenzip, &log)?;
         return Ok(Extraction::Extracted);
     }
     if is_zip(archive) {

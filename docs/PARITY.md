@@ -22,7 +22,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito-engine (`arguments::split`) | F4 | ✅ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito (`bootstrap`) | F5 | ✅ |
 | `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
-| `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
+| `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-transfer (`archives::extract_burn`) | F7 | ✅ |
 | `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
 | `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine (`components`) | F4 | ✅ |
 | `configuration.py` | 146 | Almacenamiento del editor de configuración; sólo guardados explícitos escriben | mito-core (`config`) | F1 | ✅ |
@@ -38,7 +38,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-win | F8 | ⬜ |
 | `i18n.py` | 109 | Traducción de mensajes MITO; catálogos y salida externa no se traducen | mito-i18n | F1 | ✅ |
 | `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-win | F8 | ⬜ |
-| `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-win | F7 | ⬜ |
+| `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-transfer (`archives::inno`) | F7 | ✅ |
 | `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine (`isolation`) | F4 | ✅ |
 | `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-mcp | F12 | ⬜ |
 | `localized_ui.py` | 17 | Traduce enlaces por instancia sin cambiar clases Textual | mito-tui (atajos y diálogos traducidos al dibujar) | F6 | ✅ |
@@ -46,7 +46,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `mcp_service.py` | 143 | Ciclo de vida del servidor MCP controlado por el gestor | mito-mcp | F12 | ⬜ |
 | `mcp_tools.py` | 285 | Esquemas MCP y adaptadores sobre los servicios genéricos | mito-mcp | F12 | ⬜ |
 | `mcp_ui.py` | 138 | Control y configuración MCP opt-in en Textual | mito-tui | F12 | ⬜ |
-| `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win | F7 | ⬜ |
+| `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win (`msi`: lectura con `msi.dll`) y mito-transfer (`archives::extract_msi`) | F7 | ✅ |
 | `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-tui | F8 (lo usan los diálogos nativos de F8, F9 y F11) | ⬜ |
 | `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
@@ -97,7 +97,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_application_entries.py` | 2 | F8 |  | ⬜ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`); `prepare` en F7 | 🟨 |
-| `test_burn.py` | 8 | F7 |  | ⬜ |
+| `test_burn.py` | 8 | F7 | `mito-transfer::archives::burn` (7; el de los helpers de hooks va con `hooks`) | 🟨 |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
 | `test_cli.py` | 12 | F4 | `crates/mito/tests` (7 aplicables; 5 dependen de F8/F11, con su parseo cubierto) | 🟨 |
 | `test_component_environment.py` | 2 | F4 | `mito-engine` (2) | ✅ |
@@ -111,13 +111,13 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_host_data_ui.py` | 2 | F8 |  | ⬜ |
 | `test_host_exposure.py` | 6 | F8 |  | ⬜ |
 | `test_i18n.py` | 9 | F1 | `mito-i18n` (6); 3 de interfaz pasan a F6 | 🟨 |
-| `test_inno.py` | 10 | F7 |  | ⬜ |
+| `test_inno.py` | 10 | F7 | `mito-transfer::archives::inno` y `mito-engine/tests/extractors.rs` (9); el de `expand_inno` va con `hooks` | 🟨 |
 | `test_installer_files.py` | 6 | F7 |  | ⬜ |
 | `test_isolation.py` | 6 | F4 | `mito-engine` (5); 1 cubierto en `mito-core::persistence` | ✅ |
 | `test_mcp.py` | 15 | F12 |  | ⬜ |
 | `test_mcp_ui.py` | 3 | F12 |  | ⬜ |
 | `test_move_whole.py` | 5 | F11 |  | ⬜ |
-| `test_msi.py` | 5 | F7 |  | ⬜ |
+| `test_msi.py` | 5 | F7 | `mito-transfer::archives::msi` (5, con MSI y CAB reales) y `mito-engine/tests/extractors.rs` | ✅ |
 | `test_network.py` | 5 | F9 |  | ⬜ |
 | `test_network_setup.py` | 8 | F9 |  | ⬜ |
 | `test_open_with.py` | 9 | F8 |  | ⬜ |
