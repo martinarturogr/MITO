@@ -1,0 +1,19 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Crear un acceso de aplicación en el escritorio
+
+Usage: mito app-shortcut [OPTIONS] --profile <PROFILE> <INSTALLATION> [ARGUMENTS]...
+
+Arguments:
+  <INSTALLATION>  ID de instalación
+  [ARGUMENTS]...  Argumentos de la aplicación (tras `--`)
+
+Options:
+      --profile <PROFILE>    Profile
+      --badge <BADGE>        Texto de la insignia
+      --color <COLOR>        Color de la insignia
+      --shortcut <SHORTCUT>  Etiqueta del acceso declarado
+      --coupled              Acoplar a una pestaña de la terminal
+  -h, --help                 Print help

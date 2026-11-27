@@ -1,0 +1,16 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Abrir un ejecutable externo con un profile de MITO
+
+Usage: mito host-run [OPTIONS] --profile <PROFILE> <IDENTITY> [ARGUMENTS]...
+
+Arguments:
+  <IDENTITY>      Identidad del ejecutable externo
+  [ARGUMENTS]...  Argumentos del ejecutable (tras `--`)
+
+Options:
+      --profile <PROFILE>  Profile
+      --coupled            Acoplar a una pestaña de la terminal
+  -h, --help               Print help

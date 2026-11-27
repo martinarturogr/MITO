@@ -1,0 +1,6 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"search\", \"--compatible\"])"
+---
+main/gittool                                 2.5.1                Compatible
+main/nodejs                                  20.1.0               Compatible

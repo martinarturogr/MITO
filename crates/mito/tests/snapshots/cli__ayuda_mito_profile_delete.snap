@@ -1,0 +1,13 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Eliminar un profile
+
+Usage: mito profile delete <NAME>
+
+Arguments:
+  <NAME>  Nombre
+
+Options:
+  -h, --help  Print help

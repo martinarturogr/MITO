@@ -1,0 +1,13 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Abrir la terminal de un profile
+
+Usage: mito terminal [OPTIONS] --profile <PROFILE>
+
+Options:
+      --profile <PROFILE>  Profile
+      --type <TYPE>        Intérprete de comandos [default: cmd] [possible values: cmd, powershell]
+      --new                Abrir en una ventana nueva
+  -h, --help               Print help

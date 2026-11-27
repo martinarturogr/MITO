@@ -1,0 +1,19 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Gestionar profiles
+
+Usage: mito profile <COMMAND>
+
+Commands:
+  create  Crear un profile
+  delete  Eliminar un profile
+  export  Exportar un profile
+  import  Importar un profile
+  list    Listar los profiles
+  show    Mostrar un profile en JSON
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help

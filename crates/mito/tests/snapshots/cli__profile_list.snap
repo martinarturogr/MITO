@@ -1,0 +1,6 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"profile\", \"list\"])"
+---
+dev
+work

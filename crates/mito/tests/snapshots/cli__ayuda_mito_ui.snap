@@ -1,0 +1,11 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Abrir la interfaz Textual
+
+Usage: mito ui [OPTIONS]
+
+Options:
+      --profile <PROFILE>  Profile con el que abrir
+  -h, --help               Print help

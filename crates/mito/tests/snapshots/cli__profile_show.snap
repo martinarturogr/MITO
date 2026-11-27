@@ -1,0 +1,9 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"profile\", \"show\", \"work\"])"
+---
+{
+  "workspace": "shared",
+  "apps": [],
+  "env": {}
+}

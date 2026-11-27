@@ -1,0 +1,8 @@
+{
+  "version": "2.5.1",
+  "description": "Control de versiones distribuido (fixture)",
+  "homepage": "https://example.org/gittool",
+  "url": "https://example.org/gittool-2.5.1.zip",
+  "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "bin": "git.exe"
+}

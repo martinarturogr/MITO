@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Buscar componentes en el catálogo
+
+Usage: mito search [OPTIONS] [QUERY]
+
+Arguments:
+  [QUERY]  Texto a buscar [default: ""]
+
+Options:
+      --compatible  Mostrar solo los componentes compatibles
+  -h, --help        Print help

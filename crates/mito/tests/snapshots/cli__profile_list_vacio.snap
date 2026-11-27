@@ -1,0 +1,5 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"profile\", \"list\"])"
+---
+Todavía no hay profiles

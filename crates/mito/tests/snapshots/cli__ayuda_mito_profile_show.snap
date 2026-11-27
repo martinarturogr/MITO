@@ -1,0 +1,13 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Mostrar un profile en JSON
+
+Usage: mito profile show <NAME>
+
+Arguments:
+  <NAME>  Nombre
+
+Options:
+  -h, --help  Print help
