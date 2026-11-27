@@ -1,0 +1,165 @@
+---
+source: crates/mito-terminal/src/settings/tests.rs
+expression: "serde_json::to_string_pretty(&data).unwrap()"
+---
+{
+  "theme": "dark",
+  "launchMode": "maximized",
+  "showTabsInFullscreen": true,
+  "alwaysShowTabs": true,
+  "copyOnSelect": false,
+  "defaultProfile": "{d58b5131-c397-5636-be24-8e58dc2f02ca}",
+  "firstWindowPreference": "defaultProfile",
+  "newTabMenu": [
+    {
+      "type": "profile",
+      "profile": "{d58b5131-c397-5636-be24-8e58dc2f02ca}"
+    },
+    {
+      "type": "profile",
+      "profile": "{5b8b1a8a-7a45-50a3-ba42-002700a6d109}"
+    },
+    {
+      "type": "profile",
+      "profile": "{bf682261-68d8-5c8b-b536-29838d41c9a6}"
+    }
+  ],
+  "disabledProfileSources": [
+    "Windows.Terminal.Wsl",
+    "Windows.Terminal.Azure",
+    "Windows.Terminal.PowershellCore",
+    "Windows.Terminal.SSH",
+    "Windows.Terminal.VisualStudio"
+  ],
+  "profiles": {
+    "defaults": {
+      "font": {
+        "face": "Cascadia Mono",
+        "size": 11
+      },
+      "padding": "12",
+      "opacity": 94,
+      "useAcrylic": true,
+      "suppressApplicationTitle": true,
+      "closeOnExit": "graceful"
+    },
+    "list": [
+      {
+        "guid": "{d58b5131-c397-5636-be24-8e58dc2f02ca}",
+        "name": "CMD (java11)",
+        "tabTitle": "CMD (java11)",
+        "commandline": "C:\\MITO\\core\\bin\\mito.exe shell --profile java11",
+        "startingDirectory": "C:\\MITO",
+        "icon": "C:\\MITO\\core\\assets\\branding\\mito.ico",
+        "colorScheme": "MITO CMD",
+        "tabColor": "#9a7735",
+        "hidden": false
+      },
+      {
+        "guid": "{5b8b1a8a-7a45-50a3-ba42-002700a6d109}",
+        "name": "PowerShell (java11)",
+        "tabTitle": "PowerShell (java11)",
+        "commandline": "C:\\MITO\\core\\bin\\mito.exe shell --type powershell --profile java11",
+        "startingDirectory": "C:\\MITO",
+        "icon": "C:\\MITO\\core\\assets\\branding\\mito.ico",
+        "colorScheme": "MITO PowerShell",
+        "tabColor": "#317ca4",
+        "hidden": false
+      },
+      {
+        "guid": "{bf682261-68d8-5c8b-b536-29838d41c9a6}",
+        "name": "MITO",
+        "tabTitle": "MITO",
+        "commandline": "C:\\MITO\\core\\bin\\mito.exe ui",
+        "startingDirectory": "C:\\MITO",
+        "icon": "C:\\MITO\\core\\assets\\branding\\mito.ico",
+        "colorScheme": "MITO Forest",
+        "tabColor": "#368448",
+        "hidden": false
+      },
+      {
+        "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+        "hidden": true
+      },
+      {
+        "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+        "hidden": true
+      },
+      {
+        "guid": "{87bca5b6-a16a-40f6-8eb6-d20a946776c2}",
+        "hidden": true
+      }
+    ]
+  },
+  "schemes": [
+    {
+      "name": "MITO Forest",
+      "background": "#102820",
+      "foreground": "#e7efdf",
+      "cursorColor": "#b6e568",
+      "selectionBackground": "#456451",
+      "black": "#14241e",
+      "red": "#e27878",
+      "green": "#8ccf58",
+      "yellow": "#e4c465",
+      "blue": "#69acce",
+      "purple": "#be94ca",
+      "cyan": "#63c6b3",
+      "white": "#d5dfd5",
+      "brightBlack": "#72877b",
+      "brightRed": "#ffa09a",
+      "brightGreen": "#b5ef75",
+      "brightYellow": "#ffe38a",
+      "brightBlue": "#8fcfee",
+      "brightPurple": "#d7b4e3",
+      "brightCyan": "#91edda",
+      "brightWhite": "#f5faef"
+    },
+    {
+      "name": "MITO PowerShell",
+      "background": "#102332",
+      "foreground": "#e7efdf",
+      "cursorColor": "#b6e568",
+      "selectionBackground": "#456451",
+      "black": "#14241e",
+      "red": "#e27878",
+      "green": "#8ccf58",
+      "yellow": "#e4c465",
+      "blue": "#69acce",
+      "purple": "#be94ca",
+      "cyan": "#63c6b3",
+      "white": "#d5dfd5",
+      "brightBlack": "#72877b",
+      "brightRed": "#ffa09a",
+      "brightGreen": "#b5ef75",
+      "brightYellow": "#ffe38a",
+      "brightBlue": "#8fcfee",
+      "brightPurple": "#d7b4e3",
+      "brightCyan": "#91edda",
+      "brightWhite": "#f5faef"
+    },
+    {
+      "name": "MITO CMD",
+      "background": "#282319",
+      "foreground": "#e7efdf",
+      "cursorColor": "#b6e568",
+      "selectionBackground": "#456451",
+      "black": "#14241e",
+      "red": "#e27878",
+      "green": "#8ccf58",
+      "yellow": "#e4c465",
+      "blue": "#69acce",
+      "purple": "#be94ca",
+      "cyan": "#63c6b3",
+      "white": "#d5dfd5",
+      "brightBlack": "#72877b",
+      "brightRed": "#ffa09a",
+      "brightGreen": "#b5ef75",
+      "brightYellow": "#ffe38a",
+      "brightBlue": "#8fcfee",
+      "brightPurple": "#d7b4e3",
+      "brightCyan": "#91edda",
+      "brightWhite": "#f5faef"
+    }
+  ]
+}
