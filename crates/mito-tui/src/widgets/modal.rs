@@ -21,7 +21,8 @@ pub enum Size {
 }
 
 impl Size {
-    fn resolve(self, available: u16) -> u16 {
+    /// Celdas que ocupa en una pantalla con `available` celdas en esa dimensión.
+    pub fn resolve(self, available: u16) -> u16 {
         let percent = |p: u16| {
             u16::try_from(u32::from(available) * u32::from(p.min(100)) / 100).unwrap_or(available)
         };

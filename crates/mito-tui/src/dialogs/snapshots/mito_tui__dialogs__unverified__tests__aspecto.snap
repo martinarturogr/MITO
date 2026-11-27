@@ -1,0 +1,24 @@
+---
+source: crates/mito-tui/src/dialogs/unverified.rs
+expression: "harness.draw(&mut dialog, 100, 30)"
+---
+
+
+
+
+
+
+
+
+
+           ╭────────────────────────────────────────────────────────────────────────────╮
+           │ DOWNLOADS WITHOUT HASHES                                                   │
+           │                                                                            │
+           │ The integrity of these downloads cannot be verified. Do you want to        │
+           │ continue?                                                                  │
+           │                                                                            │
+           │ https://example.com/a.zip                                                  │
+           │ https://example.com/b.zip                                                  │
+           │                                                                            │
+           │              [ Cancel ]                     [ Download and install ]       │
+           ╰────────────────────────────────────────────────────────────────────────────╯

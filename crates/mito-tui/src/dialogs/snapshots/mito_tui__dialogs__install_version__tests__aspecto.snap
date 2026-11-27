@@ -1,0 +1,20 @@
+---
+source: crates/mito-tui/src/dialogs/install_version.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+
+
+
+      ╭──────────────────────────────────────────────────────────────────╮
+      │ New version available                                            │
+      │                                                                  │
+      │ main/tool                                                        │
+      │ 1.0 → 2.0                                                        │
+      │                                                                  │
+      │            [ Cancel ]                      [ Install ]           │
+      ╰──────────────────────────────────────────────────────────────────╯

@@ -1,0 +1,20 @@
+---
+source: crates/mito-tui/src/dialogs/delete_profile.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+
+
+       ╭────────────────────────────────────────────────────────────────╮
+       │ Remove profile trabajo?                                        │
+       │                                                                │
+       │ Its configuration will be removed. Components, persistent      │
+       │ data, home and workspace are preserved. Shortcuts for this     │
+       │ profile will stop working.                                     │
+       │                                                                │
+       │           [ Cancel ]                  [ Remove profile ]       │
+       ╰────────────────────────────────────────────────────────────────╯

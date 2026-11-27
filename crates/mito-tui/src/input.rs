@@ -100,6 +100,21 @@ impl Input {
         }
     }
 
+    /// ¿Es Tab (sin Mayús)?
+    pub fn is_tab(&self) -> bool {
+        matches!(self, Self::Key(key)
+            if key.code == KeyCode::Tab
+                && !key.modifiers.intersects(KeyModifiers::SHIFT | KeyModifiers::CONTROL | KeyModifiers::ALT))
+    }
+
+    /// ¿Es Mayús+Tab? (crossterm lo informa como `BackTab`, y algunos terminales como
+    /// Tab con Mayús).
+    pub fn is_back_tab(&self) -> bool {
+        matches!(self, Self::Key(key)
+            if key.code == KeyCode::BackTab
+                || (key.code == KeyCode::Tab && key.modifiers.contains(KeyModifiers::SHIFT)))
+    }
+
     /// ¿Activa un botón? (Intro o Espacio).
     pub fn is_activation(&self) -> bool {
         self.is(KeyCode::Enter) || self.is(KeyCode::Char(' '))
@@ -217,6 +232,16 @@ mod tests {
         assert_eq!(alt_gr.typed(), Some('@'));
         let alt = Input::Key(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::ALT));
         assert_eq!(alt.typed(), None);
+    }
+
+    #[test]
+    fn tab_y_mayus_tab() {
+        assert!(Input::key(KeyCode::Tab).is_tab());
+        assert!(!Input::key(KeyCode::Tab).is_back_tab());
+        assert!(Input::key(KeyCode::BackTab).is_back_tab());
+        let shifted = Input::Key(KeyEvent::new(KeyCode::Tab, KeyModifiers::SHIFT));
+        assert!(shifted.is_back_tab() && !shifted.is_tab());
+        assert!(!Input::character('a').is_tab());
     }
 
     #[test]
