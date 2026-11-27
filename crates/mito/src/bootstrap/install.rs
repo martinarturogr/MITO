@@ -5,11 +5,13 @@ use std::fs;
 use std::os::windows::process::CommandExt as _;
 use std::path::Path;
 use std::process::Command;
+use std::time::Duration;
 
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::storage::{inside, write_json};
 use mito_core::{Layout, Message, Operation};
 use mito_engine::Downloader;
+use mito_engine::install::move_whole;
 use serde_json::json;
 
 use super::lock::{Artifact, Tool, incomplete};
@@ -181,19 +183,33 @@ pub fn install_tool(
 fn publish(payload: &Path, destination: &Path, stage: &Path) -> anyhow::Result<()> {
     let previous = destination.exists().then(|| stage.join("previous"));
     if let Some(previous) = &previous {
-        fs::rename(destination, previous).map_err(|source| {
-            mito_core::Error::domain(
+        let moved = move_whole(destination, previous, PUBLISH_WAIT);
+        if !moved.moved {
+            return Err(mito_core::Error::domain(
                 Message::new("No se pudo sustituir la herramienta: {p1} ({p2})")
                     .arg("p1", destination.display())
-                    .arg("p2", source),
+                    .arg("p2", moved.reason),
             )
-        })?;
+            .into());
+        }
     }
-    if let Err(source) = fs::rename(payload, destination) {
+    let moved = move_whole(payload, destination, PUBLISH_WAIT);
+    if !moved.moved {
         if let Some(previous) = &previous {
+            let _ = fs::remove_dir(destination);
             let _ = fs::rename(previous, destination);
         }
-        return Err(mito_core::Error::io(destination, source).into());
+        return Err(mito_core::Error::domain(
+            Message::new("No se pudo publicar la herramienta: {p1} ({p2})")
+                .arg("p1", destination.display())
+                .arg("p2", moved.reason),
+        )
+        .into());
     }
     Ok(())
 }
+
+/// Espera máxima a que el antivirus libere un árbol recién extraído antes de moverlo.
+/// Justo tras extraer, Windows Defender suele denegar el `rename` del directorio unos
+/// segundos (el original reintenta igual, `move_whole`).
+const PUBLISH_WAIT: Duration = Duration::from_secs(30);
