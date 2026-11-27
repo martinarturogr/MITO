@@ -1,0 +1,32 @@
+---
+source: crates/mito-tui/src/dialogs/configuration.rs
+expression: "harness.draw(&mut dialog, 100, 30)"
+---
+
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                          SETTINGS                                        ×  │
+  │                                                                                             │
+  │ config.properties · Variables shared by all profiles.                                       │
+  │                                                                                             │
+  │ CUSTOM                              old                                         [ Remove ]  │
+  │ mito.language                       Automatic (Windows)                      ▼  [ Remove ]  │
+  │ mcp.jobs.monitor                    false                                    ▼  [ Remove ]  │
+  │ terminal.defaultShell               cmd                                      ▼  [ Remove ]  │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │ Environment variable                   ▼ Variable name                             [ Add ]  │
+  │                                                                                             │
+  │                                          [ Save ]                                           │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────╯

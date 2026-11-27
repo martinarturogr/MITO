@@ -1,0 +1,32 @@
+---
+source: crates/mito-tui/src/dialogs/configuration.rs
+expression: text
+---
+
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                  CONFIGURACIÓN DEL PROFILE                               ×  │
+  │                                                                                             │
+  │ Profile: one · Variables que sobrescriben las globales.                                     │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │                                                                                             │
+  │ Variable de entorno                    ▼ Nombre de la variable                   [ Añadir ] │
+  │                                                                                             │
+  │                                         [ Guardar ]                                         │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────╯

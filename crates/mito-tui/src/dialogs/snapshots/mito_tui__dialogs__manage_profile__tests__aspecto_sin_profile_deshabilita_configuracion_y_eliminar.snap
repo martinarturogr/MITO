@@ -1,0 +1,22 @@
+---
+source: crates/mito-tui/src/dialogs/manage_profile.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+         ╭────────────────────────────────────────────────────────────╮
+         │                       MANAGE PROFILE                    ×  │
+         │                                                            │
+         │                     No profile selected                    │
+         │                                                            │
+         │ New profile name                                           │
+         │                                                            │
+         │                     [ Create profile ]                     │
+         │                                                            │
+         │                        [ Settings ]                        │
+         │                                                            │
+         │                     [ Remove profile ]                     │
+         ╰────────────────────────────────────────────────────────────╯
