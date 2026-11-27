@@ -1,0 +1,13 @@
+---
+source: crates/mito-tui/src/widgets/notice.rs
+expression: "testing::buffer_text(&buffer)"
+---
+
+
+ ╭────────────────────────────────────╮
+ │Primero                             │
+ ╰────────────────────────────────────╯
+ ╭────────────────────────────────────╮
+ │Segundo aviso con un texto bastante │
+ │largo para que ocupe varias líneas  │
+ ╰────────────────────────────────────╯
