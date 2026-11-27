@@ -35,3 +35,10 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   `settings.json` del Terminal privado con perfiles por profile, `YitoTerminal.exe` con el
   icono de MITO, identidad de la barra de tareas y los comandos `start`, `bootstrap` y
   `terminal`.
+- F6: interfaz de texto (`mito-tui`, ratatui) integrada en `mito.exe`: `mito` y
+  `mito ui [--profile]` abren la aplicación con barra lateral (profiles y acciones),
+  Inicio (componentes con casilla, Abrir, Info, Actualizar, Eliminar y «Actualizar
+  todos»), catálogo (búsqueda, filtros por bucket, tabla, detalle, Instalar y
+  Manifiesto), panel de log con «Copiar log», diálogos modales, indicador de ocupado,
+  progreso con cancelación y aviso de paso largo. La terminal se restaura siempre,
+  también con un pánico.

@@ -83,7 +83,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal (`branding`) + mito-win (`resources`) | F5 | ✅ |
 | `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal (`identity`) + mito-win (`taskbar`) | F5 | ✅ |
 | `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
-| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui | F6 | ⬜ |
+| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui (`app`, `dialogs`, `model`, `worker`) | F6 (sin host, red, MCP, «Versiones…»: fases posteriores) | 🟨 |
 | `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-catalog (`checks`) | F3 `daily`; F11 consultas de MITO | 🟨 |
 | `versions.py` | 324 | Versiones previas de componentes desde histórico Git y autoupdate | mito-core | F11 | ⬜ |
 
@@ -139,7 +139,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_terminal.py` | 10 | F5 | `mito-terminal` (10, golden de `settings.json` con insta) | ✅ |
 | `test_terminal_identity.py` | 4 | F5 | `mito-terminal::identity` (3); 1 simula la vtable de `IPropertyStore` ➖ | ✅ |
 | `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
-| `test_ui.py` | 26 | F6 |  | ⬜ |
+| `test_ui.py` | 26 | F6 | `mito-tui::app::tests` (los de F6, sobre `TestBackend` y un reloj inyectado) | 🟨 |
 | `test_update_checks.py` | 10 | F11 | `mito-catalog::checks` (`daily`) | 🟨 |
 | `test_versions.py` | 7 | F11 |  | ⬜ |
 
@@ -149,7 +149,7 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 
 | Comando | Fase | Estado |
 |---|---|---|
-| `mito` / `mito ui [--profile]` | F6 | ⬜ |
+| `mito` / `mito ui [--profile]` | F6 (sin terminal interactiva: «la interfaz necesita una terminal interactiva») | ✅ |
 | `mito start [--profile]` | F5 | ✅ |
 | `mito bootstrap` | F5 (`--approved`, `--preview-welcome`) | ✅ |
 | `mito installed` | F4 | ✅ |
@@ -240,3 +240,11 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Herramientas**: una versión nueva se reinstala y un `.mito-tool.json` corrupto cuenta como herramienta ausente (en el original quedaban como «incompleta»). La publicación reintenta mientras el antivirus deniega el `rename` del árbol recién extraído, como `move_whole`.
 - **Marca del Terminal**: si `YitoTerminal.exe` no puede reconstruirse se usa `WindowsTerminal.exe` con un aviso en el log.
 - **Límite de ruta**: cuenta unidades UTF-16 y recorta `\` y `/` finales; se comprueba antes de «no disponible» para que `ui` quede bloqueado como en el original.
+- **Interfaz de texto (F6)** (ADR 0011): ratatui en lugar de Textual; mismas etiquetas, ids, orden de foco, colores y atajos, pero bordes y animaciones distintos. Los reportes del hilo, el reloj (`tick(now)`) y las entradas son los únicos puntos de entrada de `App`, lo que permite probarla sin terminal.
+- **Oculto hasta su fase**: Pocketools, MCP, estado de Internet, «Actualizar MITO», aplicaciones y carpetas del host, «Acc. directo», «Extensiones», «Protocolos», el selector «Proceso», exportar/importar, acceso directo y archivos de configuración de «Gestionar profile». «Versiones…» pasa a F11.
+- **«Abrir» sin entradas de aplicación** no falla (el original leía `result[2]`); `Esc` con el diálogo de progreso o de paso largo abierto no cambia de página.
+- **Ocupado**: quedan activos «Copiar log», «Manifiesto», «Abrir Home», «Buscar e instalar…» e «Inicio · Instalados»/«Volver a Inicio» (el original los atendía en el manejador pero `begin` los deshabilitaba).
+- **Catálogo**: Intro (o un clic) sobre la fila con el cursor la selecciona; Textual resaltaba la primera fila al rellenar la tabla. Tras una acción que recarga el catálogo la selección vuelve a vaciarse, como `filter_catalog`.
+- **Portapapeles** con la API de Windows (`mito-win`) en lugar de PowerShell; los mensajes de la interfaz se escriben también en `logs/mito.log` con la operación `ui`.
+- **`ui` sin terminal interactiva** (entrada o salida redirigidas) termina con «MITO: la interfaz necesita una terminal interactiva» tras preparar el profile por defecto.
+- **Comprobación de actualizaciones al arrancar** (`StartupUpdates`) deshabilita la interfaz mientras dura (el original la lanzaba como un worker que no bloqueaba); respeta la caché diaria.
