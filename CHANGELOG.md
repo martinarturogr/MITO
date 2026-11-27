@@ -26,3 +26,7 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   shims, instalación con dependencias, staging, publicación con rollback, copias por
   profile, componentes (actualizar, eliminar, versiones) y lanzamiento de aplicaciones,
   binarios y shells; puntos de extensión para las fases posteriores (ADR 0009).
+- F4: CLI `mito.exe` con los subcomandos del original (`installed`, `logs`, `doctor`,
+  `bucket`, `search`, `profile`, `install`, `activate`, `deactivate`, `shell`, `run`) y
+  `mito.cmd` en la raíz; los comandos de fases posteriores se reconocen y avisan de que aún
+  no están disponibles.

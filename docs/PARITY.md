@@ -17,9 +17,9 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 
 | Módulo Python | Líneas | Responsabilidad | Crate Rust | Fase | Estado |
 |---|---:|---|---|---|---|
-| `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito | F4 | ⬜ |
+| `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito (`app`, `cli`) | F4 (comandos de otras fases parseados) | 🟨 |
 | `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
-| `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito | F4 | ⬜ |
+| `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito-engine (`arguments::split`) | F4 | ✅ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito | F5 | ⬜ |
 | `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
 | `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
@@ -76,7 +76,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `self_update.py` | 508 | Actualizaciones explícitas de release, aplicadas por runtime desechable | mito-engine | F11 | ⬜ |
 | `self_update_ui.py` | 49 | Revisión humana antes de descargar una release de MITO | mito-tui | F11 | ⬜ |
 | `shortcuts.py` | 233 | Accesos directos de aplicaciones en el escritorio de Windows | mito-win | F8 | ⬜ |
-| `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito | F4 | ⬜ |
+| `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito (inicio de `diagnostics` y panic hook) | F4 | ✅ |
 | `storage.py` | 114 | Rutas y JSON seguros, YitoError, identificadores y bloqueo de mutaciones | mito-core (`storage`, `lock`, `error`) | F1 | ✅ |
 | `storage_migration.py` | 76 | Conversión única de directorios de versión a rutas estables | mito-core | F11 | ⬜ |
 | `terminal.py` | 173 | Una ventana privada de Windows Terminal con activaciones de MITO | mito-terminal | F5 | ⬜ |
@@ -99,7 +99,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`); `prepare` en F7 | 🟨 |
 | `test_burn.py` | 8 | F7 |  | ⬜ |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
-| `test_cli.py` | 12 | F4 |  | ⬜ |
+| `test_cli.py` | 12 | F4 | `crates/mito/tests` (7 aplicables; 5 dependen de F8/F11, con su parseo cubierto) | 🟨 |
 | `test_component_environment.py` | 2 | F4 | `mito-engine` (2) | ✅ |
 | `test_components.py` | 17 | F4 | `mito-engine/tests/components.rs` (15); 2 en catalog/F8 | ✅ |
 | `test_configuration.py` | 4 | F1 | `mito-core::config` (4) | ✅ |
@@ -152,26 +152,26 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito` / `mito ui [--profile]` | F6 | ⬜ |
 | `mito start [--profile]` | F5 | ⬜ |
 | `mito bootstrap` | F5 | ⬜ |
-| `mito installed` | F4 | ⬜ |
-| `mito logs` | F4 (API lista en F1: `diagnostics::locations`) | ⬜ |
-| `mito doctor` | F4 | ⬜ |
+| `mito installed` | F4 | ✅ |
+| `mito logs` | F4 (API lista en F1: `diagnostics::locations`) | ✅ |
+| `mito doctor` | F4 | ✅ |
 | `mito posthog-check` | F1 (PostHog) | ➖ no aplica (ver fuera de alcance) |
 | `mito migrate-storage` | F11 | ⬜ |
-| `mito bucket import <name> <source>` | F4 (API lista en F3: `Catalog::import_bucket`) | ⬜ |
-| `mito bucket refresh [name]` | F4 (API lista en F3: `Catalog::refresh_sources`) | ⬜ |
-| `mito search [query] [--compatible]` | F4 (API lista en F3: `search::rank_entries`, `compat::compatibility`) | ⬜ |
-| `mito profile create <name> [--workspace]` | F4 | ⬜ |
-| `mito profile delete <name>` | F4 | ⬜ |
+| `mito bucket import <name> <source>` | F4 (API lista en F3: `Catalog::import_bucket`) | ✅ |
+| `mito bucket refresh [name]` | F4 (API lista en F3: `Catalog::refresh_sources`) | ✅ |
+| `mito search [query] [--compatible]` | F4 (API lista en F3: `search::rank_entries`, `compat::compatibility`) | ✅ |
+| `mito profile create <name> [--workspace]` | F4 | ✅ |
+| `mito profile delete <name>` | F4 | ✅ |
 | `mito profile export <name> <output>` | F11 | ⬜ |
 | `mito profile import <source> --name` | F11 | ⬜ |
-| `mito profile list` | F4 | ⬜ |
-| `mito profile show <name>` | F4 | ⬜ |
-| `mito install <app> [--profile]` | F4 | ⬜ |
-| `mito activate <installation> --profile` | F4 | ⬜ |
-| `mito deactivate <installation> --profile` | F4 | ⬜ |
-| `mito shell --profile [--type cmd\|powershell]` | F4 | ⬜ |
+| `mito profile list` | F4 | ✅ |
+| `mito profile show <name>` | F4 | ✅ |
+| `mito install <app> [--profile]` | F4 | ✅ |
+| `mito activate <installation> --profile` | F4 | ✅ |
+| `mito deactivate <installation> --profile` | F4 | ✅ |
+| `mito shell --profile [--type cmd\|powershell]` | F4 | ✅ |
 | `mito terminal --profile [--type] [--new]` | F5 | ⬜ |
-| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ⬜ |
+| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ✅ |
 | `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ⬜ |
 | `mito shortcut --profile [--badge] [--color]` | F8 | ⬜ |
 | `mito host-run --profile …` | F8 | ⬜ |
