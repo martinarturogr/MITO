@@ -64,7 +64,8 @@ impl Downloader for Fake {
 }
 
 struct Hx {
-    dir: tempfile::TempDir,
+    /// Se conserva para borrar la carpeta temporal al terminar.
+    _dir: tempfile::TempDir,
     engine: Engine,
     fake: Fake,
     logs: Mutex<Vec<String>>,
@@ -82,10 +83,13 @@ fn hx() -> Hx {
         hooks: Box::new(PowerShellHooks::new(env!("CARGO_BIN_EXE_mito"))),
         ..Extensions::default()
     };
-    let engine = Engine::with_extensions(dir.path(), extensions);
+    // Raíz con nombres largos: en la CI la carpeta temporal llega con nombre corto 8.3
+    // (`RUNNER~1`) y PowerShell devuelve las rutas con el nombre largo.
+    let root = dunce::canonicalize(dir.path()).unwrap();
+    let engine = Engine::with_extensions(&root, extensions);
     engine.initialize().unwrap();
     Hx {
-        dir,
+        _dir: dir,
         engine,
         fake,
         logs: Mutex::new(Vec::new()),
@@ -105,7 +109,7 @@ fn real_7zip() -> Option<PathBuf> {
 
 impl Hx {
     fn root(&self) -> &Path {
-        self.dir.path()
+        self.engine.root()
     }
 
     fn bucket(&self, apps: &Value) {
