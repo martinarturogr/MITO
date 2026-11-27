@@ -9,17 +9,26 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+anyhow.workspace = true
 clap.workspace = true
+ctrlc.workspace = true
+mito-catalog.workspace = true
 mito-core.workspace = true
 mito-i18n.workspace = true
 mito-engine.workspace = true
 mito-terminal.workspace = true
 mito-tui.workspace = true
 mito-mcp.workspace = true
+serde_json.workspace = true
 
 [lints]
 workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true
+insta.workspace = true
+mito-transfer.workspace = true
 predicates.workspace = true
+sha2.workspace = true
+tempfile.workspace = true
+zip.workspace = true

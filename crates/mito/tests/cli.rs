@@ -21,6 +21,11 @@ fn muestra_la_version() {
 }
 
 #[test]
-fn sin_argumentos_muestra_la_ayuda() {
-    mito().assert().failure().stderr(contains("Usage"));
+fn sin_argumentos_abre_la_interfaz_que_aun_no_esta_disponible() {
+    mito()
+        .arg("--root")
+        .arg(std::env::temp_dir().join("mito-sin-estado"))
+        .assert()
+        .failure()
+        .stderr("MITO: Comando no disponible todavía: ui\n");
 }
