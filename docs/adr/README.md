@@ -16,3 +16,4 @@ sustituye por otro nuevo que lo indique.
 | [0009](0009-motor-con-puntos-de-extension.md) | Motor con puntos de extensión para fases posteriores | Aceptado |
 | [0010](0010-bootstrap-en-mito-exe.md) | Bootstrap dentro de mito.exe | Aceptado |
 | [0011](0011-tui-con-ratatui.md) | Interfaz de texto con ratatui | Aceptado |
+| [0012](0012-hooks-vuelven-a-mito-exe.md) | Los hooks vuelven a mito.exe para extraer | Aceptado |

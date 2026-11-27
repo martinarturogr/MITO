@@ -9,6 +9,9 @@
 //! - MSI, Burn e Inno Setup pertenecen a la fase F7: aquí solo hay puntos de enganche
 //!   ([`ExtractOptions::msi`], [`ExtractOptions::inno`]).
 
+mod burn;
+mod inno;
+mod msi;
 mod sevenzip;
 mod sink;
 mod tarball;
@@ -21,6 +24,9 @@ use std::path::Path;
 use mito_core::Message;
 use mito_core::storage::inside;
 
+pub use burn::extract_burn;
+pub use inno::{APP, extract_inno, inno_root, restore_declared_targets};
+pub use msi::extract_msi;
 pub use sevenzip::{extract_7zip, extract_7zip_with};
 pub use tarball::{extract_tar, extract_tar_with, is_tar};
 pub use zipfile::{extract_zip, extract_zip_with, is_zip};
