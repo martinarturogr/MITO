@@ -766,9 +766,13 @@ mod tests {
         assert!(dialog.focus().is_registered("info-open-0"));
         assert!(!dialog.focus().is_registered("info-open-1"));
         harness.click(&mut dialog, "info-open-0");
+        // Se comparan canonicalizadas: la carpeta temporal puede llegar con nombre corto
+        // 8.3 (`RUNNER~1`) y el motor la devuelve con el nombre largo.
+        let opened = opened.lock().unwrap().clone();
+        assert_eq!(opened.len(), 1);
         assert_eq!(
-            opened.lock().unwrap().as_slice(),
-            [harness.dir.path().join("core/apps/main/tool")]
+            std::fs::canonicalize(&opened[0]).unwrap(),
+            std::fs::canonicalize(harness.dir.path().join("core/apps/main/tool")).unwrap()
         );
     }
 
