@@ -30,3 +30,8 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   `bucket`, `search`, `profile`, `install`, `activate`, `deactivate`, `shell`, `run`) y
   `mito.cmd` en la raíz; los comandos de fases posteriores se reconocen y avisan de que aún
   no están disponibles.
+- F5: bootstrap de 7-Zip, innounp y Windows Terminal desde `mito.exe` (bienvenida en
+  consola, hashes fijados, reinstalación por versión), límite de longitud de la raíz,
+  `settings.json` del Terminal privado con perfiles por profile, `YitoTerminal.exe` con el
+  icono de MITO, identidad de la barra de tareas y los comandos `start`, `bootstrap` y
+  `terminal`.

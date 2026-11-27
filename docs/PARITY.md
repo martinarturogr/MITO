@@ -20,7 +20,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito (`app`, `cli`) | F4 (comandos de otras fases parseados) | 🟨 |
 | `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
 | `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito-engine (`arguments::split`) | F4 | ✅ |
-| `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito | F5 | ⬜ |
+| `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito (`bootstrap`) | F5 | ✅ |
 | `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
 | `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
 | `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
@@ -53,7 +53,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
 | `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui | F8 | ⬜ |
 | `operation.py` | 110 | Progreso y cancelación cooperativa de la operación en curso | mito-core (`operation`) | F1 | ✅ |
-| `path_limit.py` | 44 | Protección MAX_PATH para la raíz portable en Windows | mito-core | F5 | ⬜ |
+| `path_limit.py` | 44 | Protección MAX_PATH para la raíz portable en Windows | mito-core (`path_limit`) | F5 | ✅ |
 | `persistence.py` | 101 | Persiste directorios y archivos bajo un único home y reconstruye enlaces | mito-core (`persistence`) + mito-win (`links`) | F1 | ✅ |
 | `pocketool_authoring.py` | 269 | Fuentes Pocketool de usuario; guardar nunca ejecuta comandos | mito-engine | F10 | ⬜ |
 | `pocketool_editor_ui.py` | 453 | Diálogos de autoría de Pocketools | mito-tui | F10 | ⬜ |
@@ -79,9 +79,9 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito (inicio de `diagnostics` y panic hook) | F4 | ✅ |
 | `storage.py` | 114 | Rutas y JSON seguros, YitoError, identificadores y bloqueo de mutaciones | mito-core (`storage`, `lock`, `error`) | F1 | ✅ |
 | `storage_migration.py` | 76 | Conversión única de directorios de versión a rutas estables | mito-core | F11 | ⬜ |
-| `terminal.py` | 173 | Una ventana privada de Windows Terminal con activaciones de MITO | mito-terminal | F5 | ⬜ |
-| `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal | F5 | ⬜ |
-| `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal | F5 | ⬜ |
+| `terminal.py` | 173 | Una ventana privada de Windows Terminal con activaciones de MITO | mito-terminal | F5 | ✅ |
+| `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal (`branding`) + mito-win (`resources`) | F5 | ✅ |
+| `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal (`identity`) + mito-win (`taskbar`) | F5 | ✅ |
 | `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
 | `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui | F6 | ⬜ |
 | `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-catalog (`checks`) | F3 `daily`; F11 consultas de MITO | 🟨 |
@@ -121,7 +121,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_network.py` | 5 | F9 |  | ⬜ |
 | `test_network_setup.py` | 8 | F9 |  | ⬜ |
 | `test_open_with.py` | 9 | F8 |  | ⬜ |
-| `test_path_limit.py` | 4 | F5 |  | ⬜ |
+| `test_path_limit.py` | 4 | F5 | `mito-core::path_limit` (3); 1 compara PowerShell con Python ➖ | ✅ |
 | `test_persistence_locations.py` | 2 | F1 | `mito-core::persistence` (2) | ✅ |
 | `test_pocketool_authoring.py` | 25 | F10 |  | ⬜ |
 | `test_pocketool_ui.py` | 7 | F10 |  | ⬜ |
@@ -136,8 +136,8 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_self_update.py` | 28 | F11 |  | ⬜ |
 | `test_shortcuts.py` | 16 | F8 |  | ⬜ |
 | `test_stable_storage.py` | 7 | F4 | `mito-engine` (4); 3 de migración en F11 | 🟨 |
-| `test_terminal.py` | 10 | F5 |  | ⬜ |
-| `test_terminal_identity.py` | 4 | F5 |  | ⬜ |
+| `test_terminal.py` | 10 | F5 | `mito-terminal` (10, golden de `settings.json` con insta) | ✅ |
+| `test_terminal_identity.py` | 4 | F5 | `mito-terminal::identity` (3); 1 simula la vtable de `IPropertyStore` ➖ | ✅ |
 | `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
 | `test_ui.py` | 26 | F6 |  | ⬜ |
 | `test_update_checks.py` | 10 | F11 | `mito-catalog::checks` (`daily`) | 🟨 |
@@ -150,8 +150,8 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | Comando | Fase | Estado |
 |---|---|---|
 | `mito` / `mito ui [--profile]` | F6 | ⬜ |
-| `mito start [--profile]` | F5 | ⬜ |
-| `mito bootstrap` | F5 | ⬜ |
+| `mito start [--profile]` | F5 | ✅ |
+| `mito bootstrap` | F5 (`--approved`, `--preview-welcome`) | ✅ |
 | `mito installed` | F4 | ✅ |
 | `mito logs` | F4 (API lista en F1: `diagnostics::locations`) | ✅ |
 | `mito doctor` | F4 | ✅ |
@@ -170,7 +170,7 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito activate <installation> --profile` | F4 | ✅ |
 | `mito deactivate <installation> --profile` | F4 | ✅ |
 | `mito shell --profile [--type cmd\|powershell]` | F4 | ✅ |
-| `mito terminal --profile [--type] [--new]` | F5 | ⬜ |
+| `mito terminal --profile [--type] [--new]` | F5 | ✅ |
 | `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ✅ |
 | `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ⬜ |
 | `mito shortcut --profile [--badge] [--color]` | F8 | ⬜ |
@@ -236,3 +236,7 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **`version_key`** con un número que no cabe en 128 bits no es candidata a actualización (Python usa enteros sin límite).
 - **`.mito.json`** se escribe una sola vez con el registro completo (incluido `pinned`); el original lo escribía dos veces con el mismo resultado.
 - **Rollback de la publicación** sin interrumpirse por errores secundarios; nunca sigue las junctions de persistencia al borrar (test de regresión).
+- **Bootstrap dentro de `mito.exe`** (ADR 0010): sin `bootstrap.ps1` ni CPython; el lock solo contiene `tools`. La bienvenida de consola lista solo las herramientas que faltan (`--preview-welcome` lista todas y no escribe nada), no imprime mensaje de éxito y usa `core/state/mutation.lock`.
+- **Herramientas**: una versión nueva se reinstala y un `.mito-tool.json` corrupto cuenta como herramienta ausente (en el original quedaban como «incompleta»). La publicación reintenta mientras el antivirus deniega el `rename` del árbol recién extraído, como `move_whole`.
+- **Marca del Terminal**: si `YitoTerminal.exe` no puede reconstruirse se usa `WindowsTerminal.exe` con un aviso en el log.
+- **Límite de ruta**: cuenta unidades UTF-16 y recorta `\` y `/` finales; se comprueba antes de «no disponible» para que `ui` quede bloqueado como en el original.
