@@ -8,7 +8,6 @@
 //! | Punto | Fase | Por defecto |
 //! |---|---|---|
 //! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar ([`crate::PowerShellHooks`] en el binario) |
-//! | [`Extensions::msi`], [`Extensions::inno`] | F7 | sin extractor: «Formato de archivo todavía no soportado» |
 //! | [`Terminal::prepare`] | F5 | no-op |
 //! | [`Host::migrate_application_links`] | F8 | no-op |
 //! | [`Pocketools`] | F10 | lista vacía |
@@ -265,9 +264,6 @@ pub struct NoJobs;
 
 impl Jobs for NoJobs {}
 
-/// Extractor delegado (MSI o Inno Setup, F7): recibe el archivo y el destino.
-pub type Extractor = Box<dyn Fn(&Path, &Path) -> mito_transfer::Result<()> + Send + Sync>;
-
 /// Punto de fallo para pruebas: recibe el nombre del punto (`save-profile`,
 /// `prepare-payload`, `refresh-launchers`) y su sujeto (el profile) y puede devolver un
 /// error de E/S para simular el fallo.
@@ -289,10 +285,6 @@ pub struct Extensions {
     pub network: Box<dyn Network>,
     /// Job Objects (F8).
     pub jobs: Box<dyn Jobs>,
-    /// Extractor de MSI (F7).
-    pub msi: Option<Extractor>,
-    /// Extractor de Inno Setup (F7).
-    pub inno: Option<Extractor>,
     /// Ruta de `7z.exe`; `None` usa `core/tools/7zip/7z.exe` si existe (F5).
     pub sevenzip: Option<PathBuf>,
     /// Inyección de fallos para pruebas.
@@ -310,8 +302,6 @@ impl Default for Extensions {
             pocketools: Box::new(NoPocketools),
             network: Box::new(NoNetwork),
             jobs: Box::new(NoJobs),
-            msi: None,
-            inno: None,
             sevenzip: None,
             fault: None,
         }
