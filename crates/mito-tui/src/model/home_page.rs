@@ -131,6 +131,7 @@ pub fn update_tooltip(candidate: &Candidate, tr: &Translator) -> String {
 }
 
 #[cfg(test)]
+#[allow(clippy::assert_is_empty)]
 mod tests {
     use serde_json::json;
 

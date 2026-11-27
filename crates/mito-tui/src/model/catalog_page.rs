@@ -266,6 +266,7 @@ fn hook_lines(manifest: &Value, tr: &Translator) -> Vec<String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::assert_is_empty)]
 mod tests {
     use std::fs;
 

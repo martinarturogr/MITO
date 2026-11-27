@@ -1,4 +1,5 @@
 //! Instancia temporal, catálogo local y descargador falso para las pruebas (sin red).
+#![allow(clippy::unused_self, clippy::needless_pass_by_value)]
 
 use std::fs;
 use std::path::Path;
@@ -21,6 +22,16 @@ pub(crate) struct Fake {
     pub fail: Arc<Mutex<Vec<String>>>,
     /// Subcadenas de URL que fallan con un error de integridad.
     pub tamper: Arc<Mutex<Vec<String>>>,
+    /// Subcadenas de URL que cancelan la operación durante la descarga.
+    pub cancel: Arc<Mutex<Vec<String>>>,
+    /// Subcadenas de URL cuya descarga entra en pánico.
+    pub explode: Arc<Mutex<Vec<String>>>,
+}
+
+impl Fake {
+    fn matches(list: &Mutex<Vec<String>>, url: &str) -> bool {
+        list.lock().unwrap().iter().any(|f| url.contains(f))
+    }
 }
 
 impl Downloader for Fake {
@@ -29,9 +40,13 @@ impl Downloader for Fake {
         url: &str,
         destination: &Path,
         _expected: Option<&str>,
-        _operation: &Operation,
+        operation: &Operation,
     ) -> mito_transfer::Result<()> {
         self.hits.lock().unwrap().push(url.to_owned());
+        assert!(!Self::matches(&self.explode, url), "descarga con pánico");
+        if Self::matches(&self.cancel, url) {
+            operation.cancel();
+        }
         if self.fail.lock().unwrap().iter().any(|f| url.contains(f)) {
             return Err(mito_transfer::Error::Network {
                 reason: "fallo simulado".into(),
@@ -64,8 +79,8 @@ pub(crate) fn spanish() -> mito_i18n::Translator {
 
 /// Instancia temporal con su motor y una carpeta que hace de origen del bucket `main`.
 pub(crate) struct Fx {
-    /// Raíz de la instancia.
-    pub dir: tempfile::TempDir,
+    /// Raíz de la instancia (se borra al soltar la instancia de prueba).
+    pub _dir: tempfile::TempDir,
     /// Origen local del bucket (`<origen>/<app>.json`).
     pub source: tempfile::TempDir,
     /// Motor de la instancia.
@@ -85,7 +100,7 @@ pub(crate) fn fx() -> Fx {
     let engine = Engine::with_extensions(dir.path(), extensions);
     engine.initialize().unwrap();
     Fx {
-        dir,
+        _dir: dir,
         source,
         engine: Arc::new(engine),
         fake,
