@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "tools": [
+    {
+      "id": "7zip",
+      "version": "26.02",
+      "required": [
+        "7z.exe",
+        "7z.dll"
+      ],
+      "artifacts": [
+        {
+          "fileName": "7zr.exe",
+          "url": "https://github.com/ip7z/7zip/releases/download/26.02/7zr.exe",
+          "sha256": "56b8cc9f4971cef253644fafe54063ed7fdca551d4dee0f8c6baa81b855acd72",
+          "install": {
+            "type": "file",
+            "destination": ".",
+            "target": "7zr.exe"
+          }
+        },
+        {
+          "fileName": "7z2602-x64.exe",
+          "url": "https://github.com/ip7z/7zip/releases/download/26.02/7z2602-x64.exe",
+          "sha256": "6745fa76dc2ea031596d8678f6f6b99c3c1b435b4164a63485adbbc7b8d82ef0",
+          "install": {
+            "type": "sevenZip",
+            "destination": ".",
+            "executable": "7zr.exe"
+          }
+        }
+      ]
+    },
+    {
+      "id": "windows-terminal",
+      "version": "1.24.11911.0",
+      "required": [
+        "WindowsTerminal.exe",
+        "wt.exe"
+      ],
+      "artifacts": [
+        {
+          "fileName": "Microsoft.WindowsTerminal_1.24.11911.0_x64.zip",
+          "url": "https://github.com/microsoft/terminal/releases/download/v1.24.11911.0/Microsoft.WindowsTerminal_1.24.11911.0_x64.zip",
+          "sha256": "7691efeb71c8dd0b95536c84e366fa4cf809a42c534912f9cefa1056534383bd",
+          "install": {
+            "type": "zip",
+            "destination": ".",
+            "source": "terminal-1.24.11911.0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "innounp",
+      "version": "2.71.1",
+      "required": [
+        "innounp.exe",
+        "innounp.htm"
+      ],
+      "artifacts": [
+        {
+          "fileName": "innounp-2.71.1.zip",
+          "url": "https://raw.githubusercontent.com/jrathlev/InnoUnpacker-Windows-GUI/6fb49264aacf512a093e7b4fc6fb3dd266dad31a/innounp-2/bin/innounp-2.zip",
+          "sha256": "f2f037fdbc63de31248efae9ccb294398d160dc0cbad5f36d14c2f159e17bbf5",
+          "install": {
+            "type": "zip",
+            "source": "."
+          }
+        }
+      ]
+    }
+  ]
+}

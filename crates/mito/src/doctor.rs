@@ -16,9 +16,6 @@ use serde_json::Value;
 
 use crate::console::Console;
 
-/// Longitud máxima recomendada de la raíz (`MAX_ROOT` de `path_limit.py`).
-pub const MAX_ROOT: usize = 32;
-
 /// Herramientas privadas que se comprueban (`core/tools/<nombre>/.mito-tool.json`).
 const TOOLS: [&str; 2] = ["windows-terminal", "7zip"];
 
@@ -33,20 +30,16 @@ pub fn run(engine: &Engine, console: &Console) -> anyhow::Result<()> {
     let root = engine.root();
     console.line(format!("MITO: {}", env!("CARGO_PKG_VERSION")));
     console.line(format!("Raíz: {}", root.display()));
-    let length = root
-        .display()
-        .to_string()
-        .trim_end_matches(['\\', '/'])
-        .chars()
-        .count();
-    if length > MAX_ROOT {
+    let (_, length) = mito_core::path_limit::normalized(root);
+    let max_root = mito_core::path_limit::MAX_ROOT;
+    if length > max_root {
         console.line(format!(
-            "Longitud de la raíz: {length} caracteres (máximo recomendado {MAX_ROOT}): \
+            "Longitud de la raíz: {length} caracteres (máximo recomendado {max_root}): \
              mueve la carpeta más cerca de la raíz del disco"
         ));
     } else {
         console.line(format!(
-            "Longitud de la raíz: {length} caracteres (máximo recomendado {MAX_ROOT})"
+            "Longitud de la raíz: {length} caracteres (máximo recomendado {max_root})"
         ));
     }
     console.line(format!("Home único: {}", layout.home().display()));

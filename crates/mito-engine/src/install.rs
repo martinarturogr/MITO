@@ -312,7 +312,7 @@ impl Engine {
 
     fn sevenzip_path(&self) -> Option<PathBuf> {
         self.extensions().sevenzip.clone().or_else(|| {
-            let path = self.layout().tools().join("7zip").join("7z.exe");
+            let path = self.layout().sevenzip_exe();
             path.is_file().then_some(path)
         })
     }

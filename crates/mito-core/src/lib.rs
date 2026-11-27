@@ -14,6 +14,7 @@ pub mod layout;
 pub mod lock;
 pub mod message;
 pub mod operation;
+pub mod path_limit;
 pub mod persistence;
 pub mod storage;
 

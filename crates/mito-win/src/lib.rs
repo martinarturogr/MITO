@@ -2,4 +2,5 @@
 
 pub mod files;
 pub mod links;
+pub mod registry;
 pub mod system;
