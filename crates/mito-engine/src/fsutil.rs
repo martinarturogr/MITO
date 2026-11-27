@@ -133,3 +133,52 @@ pub(crate) fn relative_posix(path: &Path, base: &Path) -> Option<String> {
 pub(crate) fn staging_name(prefix: &str) -> String {
     format!("{prefix}-{}", uuid::Uuid::new_v4().simple())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn borrar_un_payload_no_sigue_las_junctions_de_persistencia() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("home").join("persist").join("app");
+        fs::create_dir_all(&data).unwrap();
+        fs::write(data.join("config.ini"), "datos del usuario").unwrap();
+        let payload = root
+            .path()
+            .join("core")
+            .join("apps")
+            .join("main")
+            .join("app");
+        fs::create_dir_all(&payload).unwrap();
+        mito_win::links::create_junction(&data, &payload.join("data")).unwrap();
+        fs::write(root.path().join("persisted.txt"), "x").unwrap();
+        fs::hard_link(
+            root.path().join("persisted.txt"),
+            payload.join("linked.txt"),
+        )
+        .unwrap();
+
+        remove_tree(&payload).unwrap();
+
+        assert!(!payload.exists());
+        assert_eq!(
+            fs::read_to_string(data.join("config.ini")).unwrap(),
+            "datos del usuario"
+        );
+        assert!(root.path().join("persisted.txt").exists());
+    }
+
+    #[test]
+    fn borrar_una_junction_no_borra_su_destino() {
+        let root = tempfile::tempdir().unwrap();
+        let data = root.path().join("data");
+        fs::create_dir_all(&data).unwrap();
+        fs::write(data.join("f"), "x").unwrap();
+        let link = root.path().join("link");
+        mito_win::links::create_junction(&data, &link).unwrap();
+        remove_tree(&link).unwrap();
+        assert!(!link.exists());
+        assert!(data.join("f").exists());
+    }
+}
