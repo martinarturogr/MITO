@@ -4,6 +4,7 @@ pub mod clipboard;
 pub mod console;
 pub mod files;
 pub mod links;
+pub mod msi;
 pub mod registry;
 pub mod resources;
 pub mod system;
