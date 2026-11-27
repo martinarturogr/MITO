@@ -8,7 +8,9 @@ use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM, PROPERTYKEY, RPC_E_C
 use windows::Win32::System::Com::StructuredStorage::{
     PROPVARIANT, PROPVARIANT_0, PROPVARIANT_0_0, PROPVARIANT_0_0_0,
 };
-use windows::Win32::System::Com::{COINIT_APARTMENTTHREADED, CoInitializeEx, CoUninitialize};
+use windows::Win32::System::Com::{
+    COINIT_APARTMENTTHREADED, CoInitializeEx, CoTaskMemAlloc, CoUninitialize,
+};
 use windows::Win32::System::Threading::{
     OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
 };
@@ -160,27 +162,44 @@ pub fn set_app_user_model_properties(
             fmtid: GUID::from_u128(APP_USER_MODEL_FORMAT),
             pid: *pid,
         };
-        let mut text = wide(value);
-        let variant = PROPVARIANT {
-            Anonymous: PROPVARIANT_0 {
-                Anonymous: std::mem::ManuallyDrop::new(PROPVARIANT_0_0 {
-                    vt: VT_LPWSTR,
-                    wReserved1: 0,
-                    wReserved2: 0,
-                    wReserved3: 0,
-                    Anonymous: PROPVARIANT_0_0_0 {
-                        pwszVal: PWSTR(text.as_mut_ptr()),
-                    },
-                }),
-            },
-        };
-        // SAFETY: `key` y `variant` son valores locales válidos; `variant` apunta a
-        // `text`, una cadena terminada en NUL que sigue viva y que `SetValue` copia
-        // durante la llamada. El variante no se libera con `PropVariantClear` porque la
-        // memoria es nuestra.
+        let variant = lpwstr_variant(value)?;
+        // SAFETY: `key` y `variant` son valores locales válidos durante la llamada;
+        // `SetValue` copia el valor y no toma posesión de `variant`.
         unsafe { store.SetValue(&raw const key, &raw const variant) }.map_err(|e| os_error(&e))?;
     }
     Ok(())
+}
+
+/// `PROPVARIANT` de tipo `VT_LPWSTR` con la cadena en memoria de `CoTaskMemAlloc`, como
+/// `InitPropVariantFromString`.
+///
+/// `PROPVARIANT` implementa `Drop` con `PropVariantClear`, que libera `pwszVal` con
+/// `CoTaskMemFree`: apuntarlo a memoria de Rust corrompe el heap al soltarlo
+/// (`STATUS_HEAP_CORRUPTION`, 0xC0000374).
+fn lpwstr_variant(value: &str) -> io::Result<PROPVARIANT> {
+    let text = wide(value);
+    let bytes = text.len() * size_of::<u16>();
+    // SAFETY: reservar memoria no tiene precondiciones; el resultado se comprueba.
+    let buffer = unsafe { CoTaskMemAlloc(bytes) }.cast::<u16>();
+    if buffer.is_null() {
+        return Err(io::Error::from(io::ErrorKind::OutOfMemory));
+    }
+    // SAFETY: `buffer` tiene espacio para `text.len()` elementos `u16` recién reservados
+    // y no se solapa con `text`.
+    unsafe { std::ptr::copy_nonoverlapping(text.as_ptr(), buffer, text.len()) };
+    Ok(PROPVARIANT {
+        Anonymous: PROPVARIANT_0 {
+            Anonymous: std::mem::ManuallyDrop::new(PROPVARIANT_0_0 {
+                vt: VT_LPWSTR,
+                wReserved1: 0,
+                wReserved2: 0,
+                wReserved3: 0,
+                Anonymous: PROPVARIANT_0_0_0 {
+                    pwszVal: PWSTR(buffer),
+                },
+            }),
+        },
+    })
 }
 
 #[cfg(test)]
@@ -193,6 +212,20 @@ mod tests {
         assert_eq!(none.len(), 0);
         let tray = top_level_windows("Shell_TrayWnd").unwrap();
         assert!(tray.iter().all(|w| w.class == "Shell_TrayWnd"));
+    }
+
+    #[test]
+    fn el_variante_de_texto_se_libera_con_el_asignador_de_com() {
+        // Con la cadena en memoria de Rust, soltar el variante corrompía el heap y el
+        // proceso terminaba con 0xC0000374.
+        for value in ["MITO.Instance.prueba", "", "ñandú – icono"] {
+            let variant = lpwstr_variant(value).unwrap();
+            assert_eq!(variant.vt(), VT_LPWSTR);
+            // SAFETY: en el test, el variante es `VT_LPWSTR` con una cadena terminada en NUL.
+            let text = unsafe { variant.Anonymous.Anonymous.Anonymous.pwszVal.to_string() };
+            assert_eq!(text.unwrap(), value);
+            drop(variant);
+        }
     }
 
     #[test]
