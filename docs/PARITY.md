@@ -97,7 +97,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_application_entries.py` | 2 | F8 |  | ⬜ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`) y `mito-engine::resources` (`prepare`); tests en `crates/mito/tests/hooks.rs` | ✅ |
-| `test_burn.py` | 8 | F7 | `mito-transfer::archives::burn` (7; el de los helpers de hooks va con `hooks`) | 🟨 |
+| `test_burn.py` | 8 | F7 | `mito-transfer::archives::burn` (7) y `crates/mito/tests/hooks.rs` (confinamiento de los helpers); camino feliz de `Expand-DarkArchive` y `Expand-MsiArchive` verificado E2E con `main/chezscheme` | ✅ |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
 | `test_cli.py` | 12 | F4 | `crates/mito/tests` (7 aplicables; 5 dependen de F8/F11, con su parseo cubierto) | 🟨 |
 | `test_component_environment.py` | 2 | F4 | `mito-engine` (2) | ✅ |
@@ -111,8 +111,8 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_host_data_ui.py` | 2 | F8 |  | ⬜ |
 | `test_host_exposure.py` | 6 | F8 |  | ⬜ |
 | `test_i18n.py` | 9 | F1 | `mito-i18n` (6); 3 de interfaz pasan a F6 | 🟨 |
-| `test_inno.py` | 10 | F7 | `mito-transfer::archives::inno` y `mito-engine/tests/extractors.rs` (9); el de `expand_inno` va con `hooks` | 🟨 |
-| `test_installer_files.py` | 6 | F7 |  | ⬜ |
+| `test_inno.py` | 10 | F7 | `mito-transfer::archives::inno` y `mito-engine/tests/extractors.rs` (9) y `crates/mito/tests/hooks.rs` (`expand_inno`) | ✅ |
+| `test_installer_files.py` | 6 | F7 | `crates/mito/tests/hooks.rs` (PowerShell real, raíz con espacios) | ✅ |
 | `test_isolation.py` | 6 | F4 | `mito-engine` (5); 1 cubierto en `mito-core::persistence` | ✅ |
 | `test_mcp.py` | 15 | F12 |  | ⬜ |
 | `test_mcp_ui.py` | 3 | F12 |  | ⬜ |
@@ -248,3 +248,7 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Portapapeles** con la API de Windows (`mito-win`) en lugar de PowerShell; los mensajes de la interfaz se escriben también en `logs/mito.log` con la operación `ui`.
 - **`ui` sin terminal interactiva** (entrada o salida redirigidas) termina con «MITO: la interfaz necesita una terminal interactiva» tras preparar el profile por defecto.
 - **Comprobación de actualizaciones al arrancar** (`StartupUpdates`): corre en segundo plano sin bloquear la interfaz, como el original; una acción pedida mientras tanto espera a que termine (`wait_startup_updates`), con el indicador de ocupado.
+- **Hooks** (ADR 0012): `Invoke-MitoExpand` llama a `mito.exe hook-expand <kind>` (oculto en la ayuda) en lugar de `python -m mito.hooks`; el contexto lleva `mito` en vez de `python`. El resto del preámbulo es idéntico. Los errores de `Expand-InnoArchive`, `Expand-DarkArchive` y `Expand-MsiArchive` tienen su propia clave (el original reemplazaba el nombre tras traducir). PowerShell se lanza por su ruta de System32.
+- **MSI**: todos los CAB se extraen y validan antes de copiar nada al destino (el original copiaba CAB a CAB). Una celda numérica inválida es `MSI: invalid number {x}` en lugar de un `ValueError`.
+- **Mensajes `MSI: …`, `Burn: …` e `Inno: …`** se conservan sin traducir, como el original; `MSI: CAB {p1}/{p2}`, `Archivos MSI: {p1}/{p2}` y `Herramienta incompleta: {p1}` sí son claves.
+
