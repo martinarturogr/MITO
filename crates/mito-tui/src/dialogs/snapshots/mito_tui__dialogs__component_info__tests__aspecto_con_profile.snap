@@ -1,0 +1,59 @@
+---
+source: crates/mito-tui/src/dialogs/component_info.rs
+expression: "harness.draw(&mut dialog, 100, 60)"
+---
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │                                  COMPONENT INFORMATION                              ×  │
+     │                                                                                        │
+     │ main/tool · 1.2.3                                                                      │
+     │ Shared across profiles                                                                 │
+     │                                                                                        │
+     │ Una herramienta                                                                        │
+     │                                                                                        │
+     │ COMPONENT PATHS                                                                        │
+     │ Base binaries                                                                          │
+     │ C:/mito-snapshot\core\apps\main\tool                                                   │
+     │ Not created yet                                                                        │
+     │   [ Open ]                                                                             │
+     │ Persistent data: data                                                                  │
+     │ C:/mito-snapshot\home\persist\main\tool\data                                           │
+     │ Not created yet                                                                        │
+     │   [ Open ]                                                                             │
+     │ Persistent data: cfg.ini                                                               │
+     │ C:/mito-snapshot\home\persist\main\tool\settings.ini                                   │
+     │ Not created yet                                                                        │
+     │   [ Open ]                                                                             │
+     │                                                                                        │
+     │ ENVIRONMENT CONTRIBUTIONS                                                              │
+     │ Applied when the component is activated. Other environment variables may override      │
+     │ these values.                                                                          │
+     │                                                                                        │
+     │ Environment variables                                                                  │
+     │ TOOL_HOME = C:/mito-snapshot\core\apps\main\tool                                       │
+     │ Not created yet                                                                        │
+     │   [ Open ]                                                                             │
+     │                                                                                        │
+     │ path                                                                                   │
+     │ C:/mito-snapshot\core\apps\main\tool                                                   │
+     │ Not created yet                                                                        │
+     │   [ Open ]                                                                             │
+     │                                                                                        │
+     │ NOTES                                                                                  │
+     │ Primera nota                                                                           │
+     │ Segunda nota                                                                           │
+     │                                                                                        │
+     │ installer.script: runs with PowerShell during installation.                            │
+     │ Skipped step: MITO does not run post_install.                                          │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

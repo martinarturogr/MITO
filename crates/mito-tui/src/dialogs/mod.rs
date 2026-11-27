@@ -5,6 +5,7 @@
 //! tics de 250 ms con [`Dialog::tick`]; cuando devuelve [`Step::Close`] lo retira y usa
 //! el [`Outcome`] como respuesta (la continuación que en Textual era el `await`).
 
+mod component_info;
 mod configuration;
 mod delete_profile;
 mod install_version;
@@ -31,6 +32,7 @@ use ratatui::layout::Rect;
 use crate::input::Input;
 use crate::widgets::{Focus, Notice, Ui, WidgetId};
 
+pub use component_info::ComponentInfoDialog;
 pub use configuration::ConfigurationDialog;
 pub use delete_profile::DeleteProfileDialog;
 pub use install_version::InstallVersionDialog;
