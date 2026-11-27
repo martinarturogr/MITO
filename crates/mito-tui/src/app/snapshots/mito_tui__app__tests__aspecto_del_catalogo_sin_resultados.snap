@@ -1,0 +1,44 @@
+---
+source: crates/mito-tui/src/app/tests.rs
+expression: screen
+---
+                                   MITO · 0.0.0 — My Integrated Terminal Orchestrator
+
+  PROFILES                          BUSCAR E INSTALAR · CATÁLOGOS SCOOP
+  work                         ▼
+                                    zzzz
+       [ Gestionar profile ]
+                                    [X] main
+
+  ACCIONES                          0 componentes · 0 disponibles
+                                    Orden: palabras coincidentes, bucket/nombre y descripción. Coincidencias parciales
+      [ Inicio · Instalados ]       al final.
+                                    Sin componentes. Pulsa el botón "Actualizar catálogos". Si no aparece ninguno
+    [ Buscar actualizaciones ]      comprueba tus fuentes en "Configuración"
+                                    Componente                     Versión     Disponibilidad     Licencia
+          [ Abrir Home ]
+
+         [ Configuración ]
+
+                                     Sin resultados en los buckets seleccionados.
+
+
+
+
+
+
+
+
+
+
+                                    [ Instalar ] [ Manifiesto ] [ Actualizar catálogos ] [ Volver a Inicio ]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Comprobando actualizaciones de componentes instalados…
+Manifiestos de componentes instalados comprobados: 0.                                                    [ Copiar log ]
+
+
+
+
+
+ ^q Salir ^f Buscar componentes esc Inicio

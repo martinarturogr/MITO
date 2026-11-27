@@ -10,3 +10,5 @@ pub mod model;
 pub mod theme;
 pub mod widgets;
 pub mod worker;
+
+pub use app::{TuiError, run};

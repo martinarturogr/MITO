@@ -1,0 +1,44 @@
+---
+source: crates/mito-tui/src/app/tests.rs
+expression: rig.draw()
+---
+                                   MITO · 0.0.0 — My Integrated Terminal Orchestrator
+
+  PROFILES                          MIS COMPONENTES
+  work                         ▼
+                                    0 instalados · 0 activos en work · 0 del host
+       [ Gestionar profile ]        Los cambios de entorno se cargan al abrir una nueva pestaña.
+
+                                    Todavía no hay componentes instalados.
+  ACCIONES                          Usa el botón de abajo para añadirlos.
+
+      [ Inicio · Instalados ]
+
+    [ Buscar actualizaciones ]
+
+          [ Abrir Home ]
+
+         [ Configuración ]
+
+
+
+
+
+
+
+
+
+
+
+
+                                                         [ Buscar e instalar nuevos componentes ]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Comprobando actualizaciones de componentes instalados…
+Manifiestos de componentes instalados comprobados: 0.                                                    [ Copiar log ]
+
+
+
+
+
+ ^q Salir ^f Buscar componentes esc Inicio

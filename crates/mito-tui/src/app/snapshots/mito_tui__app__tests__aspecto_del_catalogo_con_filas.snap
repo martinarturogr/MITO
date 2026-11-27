@@ -1,0 +1,44 @@
+---
+source: crates/mito-tui/src/app/tests.rs
+expression: rig.draw()
+---
+                                   MITO · 0.0.0 — My Integrated Terminal Orchestrator
+
+  PROFILES                          BUSCAR E INSTALAR · CATÁLOGOS SCOOP
+  work                         ▼
+                                    Buscar aplicación, runtime o herramienta…
+       [ Gestionar profile ]
+                                    [X] main
+
+  ACCIONES                          2 componentes · 2 disponibles
+                                    Orden: palabras coincidentes, bucket/nombre y descripción. Coincidencias parciales
+      [ Inicio · Instalados ]       al final.
+                                    Componente                     Versión     Disponibilidad     Licencia
+    [ Buscar actualizaciones ]      main/editor                    2.0         Disponible         No declarada
+                                    main/tool                      1.0         Disponible         No declarada
+          [ Abrir Home ]
+
+         [ Configuración ]
+
+                                     main/editor · 2.0
+                                     Una herramienta
+                                     Compatible
+
+
+
+
+
+
+
+
+                                    [ Instalar ] [ Manifiesto ] [ Actualizar catálogos ] [ Volver a Inicio ]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Comprobando actualizaciones de componentes instalados…
+Manifiestos de componentes instalados comprobados: 0.                                                    [ Copiar log ]
+
+
+
+
+
+ ^q Salir ^f Buscar componentes esc Inicio
