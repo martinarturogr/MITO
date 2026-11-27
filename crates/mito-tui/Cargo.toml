@@ -9,10 +9,21 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+mito-win.workspace = true
 mito-core.workspace = true
 mito-i18n.workspace = true
+mito-transfer.workspace = true
+mito-catalog.workspace = true
 mito-engine.workspace = true
 mito-terminal.workspace = true
+crossterm.workspace = true
+ratatui.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
 
 [lints]
 workspace = true

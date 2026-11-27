@@ -43,15 +43,19 @@ pub fn run(cli: Cli, console: &Console, operation: &Operation, interrupted: &Ato
             return FAILURE;
         }
     };
-    let extensions = Extensions {
-        terminal: Box::new(PrivateTerminal),
-        ..Extensions::default()
-    };
-    let engine = Engine::with_extensions(root, extensions);
+    let engine = Engine::with_extensions(root, extensions());
     // Equivalente de `startup.py`: el log local y el registro de pánicos de hilos.
     let _ = diagnostics::init(engine.layout().clone());
     error_tracking::install_panic_hook(engine.layout().clone());
     dispatch(&engine, &command, console, operation, interrupted)
+}
+
+/// Puntos de extensión del binario: el Windows Terminal privado y el resto reales.
+fn extensions() -> Extensions {
+    Extensions {
+        terminal: Box::new(PrivateTerminal),
+        ..Extensions::default()
+    }
 }
 
 /// Raíz de la instancia: la opción oculta `--root` o la deducida de
@@ -75,8 +79,7 @@ fn unavailable(command: &Command) -> Option<String> {
     let name = match command {
         Command::Profile(ProfileCommand::Export { .. }) => "profile export",
         Command::Profile(ProfileCommand::Import { .. }) => "profile import",
-        Command::Ui { .. }
-        | Command::PocketoolRun(_)
+        Command::PocketoolRun(_)
         | Command::HostRun(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
@@ -351,8 +354,8 @@ fn execute(
             };
             mito_terminal::launch(engine, Some(profile), shell, None)?;
         }
+        Command::Ui { profile } => return ui(engine, profile.as_deref()),
         Command::Logs
-        | Command::Ui { .. }
         | Command::PocketoolRun(_)
         | Command::HostRun(_)
         | Command::McpServer(_)
@@ -363,6 +366,17 @@ fn execute(
             anyhow::bail!("Comando no disponible todavía: {}", command.name());
         }
     }
+    Ok(0)
+}
+
+/// `ui` (y `mito` sin argumentos): abre la interfaz de texto.
+fn ui(engine: &Engine, profile: Option<&str>) -> anyhow::Result<i32> {
+    // Nunca se borra el último profile; solo el primer arranque puede no tener ninguno.
+    engine.ensure_default_profile()?;
+    // La interfaz comparte el motor con su hilo de trabajo, así que necesita uno propio:
+    // se construye otro sobre la misma raíz y con los mismos puntos de extensión.
+    let owned = Engine::with_extensions(engine.root(), extensions());
+    mito_tui::run(owned, profile.map(str::to_owned))?;
     Ok(0)
 }
 
@@ -496,7 +510,12 @@ fn install(
         confirm_unverified: Some(&confirm),
         ..InstallOptions::default()
     };
-    engine.install(&[app], &options, &|line| console.line(line), operation)?;
+    engine.install(
+        &[app],
+        &options,
+        &|line| console.line(line.message.to_string()),
+        operation,
+    )?;
     Ok(())
 }
 

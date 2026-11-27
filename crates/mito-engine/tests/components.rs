@@ -81,7 +81,9 @@ fn remove_conserva_persist_y_quita_el_id_de_todos_los_profiles() {
     fs::write(f.path("home/persist/main/tool/data/keep.txt"), "keep").unwrap();
     let log = log_lines();
     f.engine
-        .remove("main/tool", &|line| log.borrow_mut().push(line.to_owned()))
+        .remove("main/tool", &|line| {
+            log.borrow_mut().push(line.message.to_string());
+        })
         .unwrap();
     assert!(!f.path("core/apps/main/tool").exists());
     assert!(f.apps("one").is_empty() && f.apps("two").is_empty());
@@ -151,7 +153,7 @@ fn update_cambia_de_version_solo_si_la_instalacion_tiene_exito() {
         .update(
             "main/tool",
             None,
-            &|l| log.borrow_mut().push(l.to_owned()),
+            &|l| log.borrow_mut().push(l.message.to_string()),
             &Operation::detached(),
         )
         .unwrap();
@@ -262,7 +264,7 @@ fn update_all_ejecuta_en_orden_omite_los_sin_cambios_y_se_detiene_en_el_primer_f
         .update_all(
             &ids,
             None,
-            &|l| log.borrow_mut().push(l.to_owned()),
+            &|l| log.borrow_mut().push(l.message.to_string()),
             &Operation::detached(),
         )
         .unwrap_err();
@@ -417,7 +419,7 @@ fn install_version_retiene_hasta_liberar_y_sobrevive_a_los_dependientes() {
             tool("1.5"),
             pin.clone(),
             None,
-            &|l| log.borrow_mut().push(l.to_owned()),
+            &|l| log.borrow_mut().push(l.message.to_string()),
             &Operation::detached(),
         )
         .unwrap();

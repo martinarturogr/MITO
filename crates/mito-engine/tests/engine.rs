@@ -518,7 +518,7 @@ fn post_install_se_omite_con_un_aviso() {
         .install(
             &["main/tool"],
             &options,
-            &|line| lines.borrow_mut().push(line.to_owned()),
+            &|line| lines.borrow_mut().push(line.message.to_string()),
             &mito_core::Operation::detached(),
         )
         .unwrap();
@@ -527,6 +527,45 @@ fn post_install_se_omite_con_un_aviso() {
             &"main/tool: post_install omitido por la política general de MITO".to_owned()
         )
     );
+}
+
+#[test]
+fn el_movimiento_de_archivos_abre_y_cierra_un_paso_largo() {
+    let f = with_tool();
+    let lines = std::cell::RefCell::new(Vec::new());
+    let options = InstallOptions::default();
+    f.engine
+        .install(
+            &["test/tool"],
+            &options,
+            &|line| lines.borrow_mut().push(line),
+            &mito_core::Operation::detached(),
+        )
+        .unwrap();
+    let lines = lines.into_inner();
+    let steps: Vec<(usize, bool)> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(index, line)| line.long_step.map(|active| (index, active)))
+        .collect();
+    assert_eq!(steps.len(), 2, "{steps:?}");
+    assert!(steps[0].1 && !steps[1].1);
+    let open = &lines[steps[0].0].message;
+    assert!(
+        open.template()
+            .starts_with("Moviendo {p1} archivos de {p2}")
+    );
+    assert_eq!(
+        open.args()
+            .iter()
+            .map(|(name, value)| (name.as_ref(), value.as_str()))
+            .collect::<Vec<_>>(),
+        [("p1", "1"), ("p2", "test/tool")]
+    );
+    let close = &lines[steps[1].0].message;
+    assert_eq!(close.template(), "Archivos {p1}: {p2}/{p3}");
+    assert_eq!(close.to_string(), "Archivos test/tool: 1/1");
+    assert!(steps[0].0 < steps[1].0);
 }
 
 #[test]

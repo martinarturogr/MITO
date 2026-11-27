@@ -1,0 +1,26 @@
+---
+source: crates/mito-tui/src/dialogs/integrity.rs
+expression: "harness.draw(&mut dialog, 100, 30)"
+---
+
+
+
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │ DOWNLOAD ALTERED BY THE NETWORK                                                        │
+     │                                                                                        │
+     │ What arrived is not the published file, so MITO discarded it and installed nothing.    │
+     │                                                                                        │
+     │ Most likely cause: the network authentication portal. Click INTERNET, sign in and try  │
+     │ again.                                                                                 │
+     │                                                                                        │
+     │ URL: https://example.com/app.zip                                                       │
+     │ Received: 1234 bytes from example.com                                                  │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                        [ Close ]                                       │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

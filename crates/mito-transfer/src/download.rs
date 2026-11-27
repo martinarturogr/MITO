@@ -206,7 +206,8 @@ impl Download<'_> {
     }
 
     /// Aviso de la descarga (el original lo imprimía y lo enviaba a la operación).
-    fn warn(&self, message: &str) {
+    fn warn(&self, message: impl Into<Message>) {
+        let message = message.into();
         tracing::debug!(operation = "download.notice", "{message}");
         self.operation.note(message);
     }
@@ -218,7 +219,7 @@ impl Download<'_> {
     /// Avisa, espera (cancelable) y duplica la espera.
     fn retry(&mut self, message: &str) -> Result<()> {
         let number = self.attempts - self.remaining + 1;
-        self.warn(&format!(
+        self.warn(format!(
             "{message}; reintentando la descarga ({number}/{})",
             self.attempts
         ));
@@ -383,7 +384,7 @@ impl Download<'_> {
                 self.length = Some(total);
             }
             self.resumed = true;
-            self.warn(&format!(
+            self.warn(format!(
                 "Aviso: reanudando la descarga desde {} bytes",
                 self.received
             ));

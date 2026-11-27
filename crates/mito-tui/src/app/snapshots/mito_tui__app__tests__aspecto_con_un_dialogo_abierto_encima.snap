@@ -1,0 +1,44 @@
+---
+source: crates/mito-tui/src/app/tests.rs
+expression: rig.draw()
+---
+                                   MITO · 0.0.0 — My Integrated Terminal Orchestrator
+
+  PROFILES                          MIS COMPONENTES
+  work                         ▼
+                                    1 instalados · 1 activos en work · 0 del host
+       [ Gestionar profile ]        Los cambios de entorno se cargan al abrir una nueva pestaña.
+
+                                     [X] main/tool   ·   1.0                          [ Abrir ] [ Info ] [ Eliminar ]
+  ACCIONES
+
+      [ Inicio · Instalados ]
+
+    [ Buscar actualizaciones ]
+                          ╭──────────────────────────────────────────────────────────────────╮
+          [ Abrir Home ]  │ Eliminar componente                                              │
+                          │                                                                  │
+         [ Configuración ]│ main/tool · 1.0                                                  │
+                          │                                                                  │
+                          │ Se retirará de estos profiles: work                              │
+                          │                                                                  │
+                          │ Se eliminarán los archivos de este componente. Se conservan el   │
+                          │ home, los datos persistentes y los workspaces. Las aplicaciones  │
+                          │ dependientes y sus accesos pueden dejar de funcionar. Cierra el  │
+                          │ componente antes de eliminarlo.                                  │
+                          │                                                                  │
+                          │           [ Cancelar ]                    [ Eliminar ]           │
+                          ╰──────────────────────────────────────────────────────────────────╯
+
+
+                                                         [ Buscar e instalar nuevos componentes ]
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Comprobando actualizaciones de componentes instalados…
+Manifiestos de componentes instalados comprobados: 1.                                                    [ Copiar log ]
+
+
+
+
+
+ ^q Salir ^f Buscar componentes esc Inicio

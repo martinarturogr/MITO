@@ -297,9 +297,9 @@ impl Engine {
             changed.push(name);
         }
         if remove_tree(&stage).is_err() {
-            log(&Message::new("Componente retirado; quedan archivos en uso en {p1}. Cierra la aplicación para poder limpiarlos.")
+            log(Message::new("Componente retirado; quedan archivos en uso en {p1}. Cierra la aplicación para poder limpiarlos.")
                 .arg("p1", stage.display())
-                .to_string());
+                .into());
         }
         self.refresh_launchers(backup.keys().map(String::as_str))?;
         if let Err(error) = self
@@ -308,16 +308,16 @@ impl Engine {
             .unregister_installation(self, installation, log)
         {
             log(
-                &Message::new("No se pudieron retirar los enlaces del host: {p1}")
+                Message::new("No se pudieron retirar los enlaces del host: {p1}")
                     .arg("p1", error)
-                    .to_string(),
+                    .into(),
             );
         }
         log(
-            &Message::new("Eliminado {p1} {p3}. Datos persistentes conservados.")
+            Message::new("Eliminado {p1} {p3}. Datos persistentes conservados.")
                 .arg("p1", &lock.key)
                 .arg("p3", lock.version_text())
-                .to_string(),
+                .into(),
         );
         Ok(())
     }
@@ -351,12 +351,12 @@ impl Engine {
             .get(key)
             .map(Record::version_text)
             .unwrap_or_default();
-        log(&Message::new(
+        log(Message::new(
             "{p1} {p3} instalado y retenido: Actualizar no lo sustituirá hasta liberarlo en Info.",
         )
         .arg("p1", key)
         .arg("p3", version)
-        .to_string());
+        .into());
         Ok(key.to_owned())
     }
 
@@ -385,12 +385,12 @@ impl Engine {
             write_json(&marker, &metadata)?;
             lock
         };
-        log(&Message::new(
+        log(Message::new(
             "Versión liberada: {p1} {p3}. Actualizar volverá a proponer la versión del catálogo.",
         )
         .arg("p1", &lock.key)
         .arg("p3", lock.version_text())
-        .to_string());
+        .into());
         Ok(true)
     }
 
@@ -432,13 +432,13 @@ impl Engine {
             .get(&old.key)
             .map(Record::version_text)
             .unwrap_or_default();
-        log(&Message::new(
+        log(Message::new(
             "Actualizado {p1}: {p3} → {p5}. Ruta, persistencia y activación conservadas.",
         )
         .arg("p1", &old.key)
         .arg("p3", old.version_text())
         .arg("p5", replacement)
-        .to_string());
+        .into());
         Ok(old.key)
     }
 
@@ -484,16 +484,16 @@ impl Engine {
             if candidate.is_none_or(|c| c.status != mito_catalog::COMPATIBLE) {
                 continue;
             }
-            log(&Message::new("Actualizando {p1} de {p3}: {p5}")
+            log(Message::new("Actualizando {p1} de {p3}: {p5}")
                 .arg("p1", position + 1)
                 .arg("p3", installations.len())
                 .arg("p5", installation)
-                .to_string());
+                .into());
             updated.push(self.update(installation, confirm_unverified, log, operation)?);
         }
-        log(&Message::new("Componentes actualizados: {p1}")
+        log(Message::new("Componentes actualizados: {p1}")
             .arg("p1", updated.len())
-            .to_string());
+            .into());
         Ok(updated)
     }
 }

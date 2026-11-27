@@ -10,14 +10,15 @@ use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
 
 use crate::error::{Error, Result};
+use crate::message::Message;
 
 /// Estado visible de una operación (el diccionario `state` del original).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OperationState {
     /// Título de la fase (p. ej. `DESCARGANDO`).
-    pub title: String,
+    pub title: Message,
     /// Descripción de la fase.
-    pub text: String,
+    pub text: Message,
     /// Unidades recibidas en la fase actual.
     pub received: Option<u64>,
     /// Total esperado, si se conoce.
@@ -25,7 +26,7 @@ pub struct OperationState {
     /// Unidad de `received`/`total` (`bytes` por defecto).
     pub unit: String,
     /// Último aviso de la fase.
-    pub note: String,
+    pub note: Message,
     /// Si la fase admite cancelación.
     pub cancellable: bool,
     /// Si hay una fase en curso.
@@ -37,12 +38,12 @@ pub struct OperationState {
 impl Default for OperationState {
     fn default() -> Self {
         Self {
-            title: String::new(),
-            text: String::new(),
+            title: Message::default(),
+            text: Message::default(),
             received: None,
             total: None,
             unit: "bytes".to_owned(),
-            note: String::new(),
+            note: Message::default(),
             cancellable: true,
             active: false,
             started: None,
@@ -128,7 +129,7 @@ impl Operation {
 
     /// Empieza una fase y reinicia el progreso. Una operación ya cancelada deja de ser
     /// cancelable.
-    pub fn phase(&self, title: impl Into<String>, text: impl Into<String>, cancellable: bool) {
+    pub fn phase(&self, title: impl Into<Message>, text: impl Into<Message>, cancellable: bool) {
         let cancelled = self.is_cancelled();
         let (title, text) = (title.into(), text.into());
         self.update(|s| {
@@ -153,7 +154,7 @@ impl Operation {
     }
 
     /// Publica un aviso de la fase.
-    pub fn note(&self, text: impl Into<String>) {
+    pub fn note(&self, text: impl Into<Message>) {
         let text = text.into();
         self.update(|s| s.note = text);
     }
@@ -254,15 +255,32 @@ mod tests {
         operation.phase("DESCARGANDO", "Descargando extras/app 1.0 (1/1)", true);
         operation.transfer(5 * 1024 * 1024, Some(20 * 1024 * 1024), "bytes");
         let state = operation.state();
-        assert_eq!(state.title, "DESCARGANDO");
+        assert_eq!(state.title.to_string(), "DESCARGANDO");
         assert_eq!(state.received, Some(5_242_880));
         assert_eq!(state.total, Some(20_971_520));
         assert!(state.active && state.cancellable && state.started.is_some());
         operation.note("Aviso");
         operation.phase("OTRA", "", true);
         assert_eq!(operation.state().received, None);
-        assert_eq!(operation.state().note, "");
+        assert!(operation.state().note.is_empty());
         assert_eq!(calls.load(Ordering::SeqCst), 4);
+    }
+
+    #[test]
+    fn la_fase_conserva_plantilla_y_argumentos() {
+        let operation = Operation::silent();
+        let text = Message::new("Descargando {p1} ({p2}/{p3})")
+            .arg("p1", "extras/app")
+            .arg("p2", 1)
+            .arg("p3", 2);
+        operation.phase("DESCARGANDO", text.clone(), true);
+        operation.note(Message::new("Reintento {p1}").arg("p1", 3));
+        let state = operation.state();
+        assert_eq!(state.title.template(), "DESCARGANDO");
+        assert_eq!(state.text, text);
+        assert_eq!(state.text.template(), "Descargando {p1} ({p2}/{p3})");
+        assert_eq!(state.text.args().len(), 3);
+        assert_eq!(state.note.to_string(), "Reintento 3");
     }
 
     #[test]

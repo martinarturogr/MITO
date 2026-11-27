@@ -1,0 +1,19 @@
+---
+source: crates/mito-tui/src/dialogs/long_step.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+
+
+
+    ╭──────────────────────────────────────────────────────────────────────╮
+    │ PREPARANDO ARCHIVOS                                                  │
+    │                                                                      │
+    │ Publicando main/tool                                                 │
+    │                                                                      │
+    │ Tiempo transcurrido: 7 s                                             │
+    ╰──────────────────────────────────────────────────────────────────────╯

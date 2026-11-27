@@ -1,0 +1,23 @@
+---
+source: crates/mito-tui/src/dialogs/remove_component.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+      ╭──────────────────────────────────────────────────────────────────╮
+      │ Remove component                                                 │
+      │                                                                  │
+      │ main/tool · 1.2.3                                                │
+      │                                                                  │
+      │ Will be removed from these profiles: uno, dos                    │
+      │                                                                  │
+      │ This component’s files will be removed. Home, persistent data    │
+      │ and workspaces are preserved. Dependent applications and their   │
+      │ shortcuts may stop working. Close the component before removing  │
+      │ it.                                                              │
+      │                                                                  │
+      │            [ Cancel ]                      [ Remove ]            │
+      ╰──────────────────────────────────────────────────────────────────╯

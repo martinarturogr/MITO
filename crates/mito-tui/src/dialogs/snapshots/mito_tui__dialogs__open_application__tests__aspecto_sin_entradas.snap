@@ -1,0 +1,21 @@
+---
+source: crates/mito-tui/src/dialogs/open_application.rs
+expression: "harness.draw(&mut dialog, 80, 24)"
+---
+
+
+
+
+
+
+
+         ╭────────────────────────────────────────────────────────────╮
+         │ Open                                                       │
+         │                                                            │
+         │ main/tool                                                  │
+         │                                                            │
+         │ Arguments                                                  │
+         │                                                            │
+         │                                                            │
+         │          [ Cancel ]                     [ Open ]           │
+         ╰────────────────────────────────────────────────────────────╯
