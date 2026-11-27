@@ -31,8 +31,8 @@ pub enum TuiError {
     /// La entrada o la salida no son una terminal interactiva.
     #[error("la interfaz necesita una terminal interactiva")]
     NotATerminal,
-    /// Fallo al preparar, dibujar o leer la terminal.
-    #[error("error de la terminal: {0}")]
+    /// Fallo al preparar, dibujar o leer la terminal (el detalle va en la causa).
+    #[error("error de la terminal")]
     Terminal(#[from] io::Error),
     /// Fallo del motor al arrancar.
     #[error(transparent)]
