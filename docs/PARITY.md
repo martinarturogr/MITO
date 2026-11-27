@@ -21,7 +21,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
 | `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito-engine (`arguments::split`) | F4 | ✅ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito (`bootstrap`) | F5 | ✅ |
-| `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
+| `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) y mito-engine (`resources`) | F3 orígenes; F7 `prepare` | ✅ |
 | `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
 | `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
 | `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine (`components`) | F4 | ✅ |
@@ -31,7 +31,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `dialog_header.py` | 22 | Cabecera común de diálogos Textual | mito-tui (`widgets::header`) | F6 | ✅ |
 | `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine (`engine`, `profiles`, `inventory`, `environment`, `install`, `publish`, `launch`) | F4 (hooks F7, terminal F5, traslado F11) | ✅ |
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
-| `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ⬜ |
+| `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ✅ |
 | `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-win | F8 | ⬜ |
 | `host_apps_ui.py` | 190 | Diálogos Textual de aplicaciones del host | mito-tui | F8 | ⬜ |
 | `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-win | F8 | ⬜ |
@@ -96,7 +96,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_activation.py` | 11 | F4 | `mito-engine` (persistencia y reubicación); el resto depende de F5/F7 | 🟨 |
 | `test_application_entries.py` | 2 | F8 |  | ⬜ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
-| `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`); `prepare` en F7 | 🟨 |
+| `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`) y `mito-engine::resources` (`prepare`); tests en `crates/mito/tests/hooks.rs` | ✅ |
 | `test_burn.py` | 8 | F7 |  | ⬜ |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
 | `test_cli.py` | 12 | F4 | `crates/mito/tests` (7 aplicables; 5 dependen de F8/F11, con su parseo cubierto) | 🟨 |

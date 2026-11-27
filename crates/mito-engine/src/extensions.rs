@@ -7,7 +7,7 @@
 //!
 //! | Punto | Fase | Por defecto |
 //! |---|---|---|
-//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar |
+//! | [`Hooks`] (`pre_install`, `installer`) | F7 | «Pasos no soportados: &lt;campo&gt;» antes de descargar ([`crate::PowerShellHooks`] en el binario) |
 //! | [`Extensions::msi`], [`Extensions::inno`] | F7 | sin extractor: «Formato de archivo todavía no soportado» |
 //! | [`Terminal::prepare`] | F5 | no-op |
 //! | [`Host::migrate_application_links`] | F8 | no-op |
@@ -46,6 +46,22 @@ pub trait Downloader: Send + Sync {
     ) -> mito_transfer::Result<()>;
 }
 
+/// Contexto de ejecución de un hook: la instancia, el componente y el payload en staging.
+pub struct HookContext<'a> {
+    /// Carpetas de la instancia.
+    pub layout: &'a Layout,
+    /// Clave `bucket/app` del componente.
+    pub key: &'a str,
+    /// Manifiesto efectivo.
+    pub manifest: &'a Map<String, Value>,
+    /// Payload en staging (`core/staging/<tmp>/payload`).
+    pub payload: &'a Path,
+    /// Registro de la operación.
+    pub log: crate::Log<'a>,
+    /// Red de la instancia, para el proxy del entorno del hook (F9).
+    pub network: &'a dyn Network,
+}
+
 /// Ejecutor de los hooks de instalación (`hooks.py`, F7).
 pub trait Hooks: Send + Sync {
     /// Campo del manifiesto efectivo que este ejecutor no soporta, si lo hay. Se
@@ -57,17 +73,18 @@ pub trait Hooks: Send + Sync {
     /// # Errors
     ///
     /// Los del hook.
-    fn pre_install(&self, key: &str, manifest: &Map<String, Value>, payload: &Path) -> Result<()>;
+    fn pre_install(&self, context: &HookContext<'_>) -> Result<()>;
 
     /// Ejecuta `installer` (script o archivo) sobre el payload en staging.
     ///
     /// # Errors
     ///
     /// Los del instalador.
-    fn installer(&self, key: &str, manifest: &Map<String, Value>, payload: &Path) -> Result<()>;
+    fn installer(&self, context: &HookContext<'_>) -> Result<()>;
 }
 
 /// Hooks por defecto: ningún paso se ejecuta y un manifiesto que lo requiere se rechaza.
+/// El binario instala [`crate::PowerShellHooks`].
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoHooks;
 
@@ -89,11 +106,11 @@ impl Hooks for NoHooks {
         })
     }
 
-    fn pre_install(&self, _: &str, _: &Map<String, Value>, _: &Path) -> Result<()> {
+    fn pre_install(&self, _: &HookContext<'_>) -> Result<()> {
         Ok(())
     }
 
-    fn installer(&self, _: &str, _: &Map<String, Value>, _: &Path) -> Result<()> {
+    fn installer(&self, _: &HookContext<'_>) -> Result<()> {
         Ok(())
     }
 }

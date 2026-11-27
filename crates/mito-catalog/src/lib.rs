@@ -16,7 +16,7 @@ pub mod pypath;
 pub mod resources;
 pub mod search;
 
-pub use buckets::{BucketSources, Catalog, Fetcher, read_json_value};
+pub use buckets::{BucketSources, Catalog, Fetcher, github_repository, read_json_value};
 pub use checks::{
     daily, daily_on, read_disabled_buckets, set_bucket_enabled, write_disabled_buckets,
 };

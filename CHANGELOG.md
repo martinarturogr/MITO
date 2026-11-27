@@ -42,3 +42,8 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   Manifiesto), panel de log con «Copiar log», diálogos modales, indicador de ocupado,
   progreso con cancelación y aviso de paso largo. La terminal se restaura siempre,
   también con un pánico.
+- F7: hooks del catálogo con PowerShell (`pre_install`, `installer.script` e
+  `installer.file`) en `mito-engine::hooks`, con el preámbulo y el entorno del original
+  y los helpers `Expand-*` que vuelven al subcomando oculto `mito.exe hook-expand`
+  (ADR 0012); `post_install` sigue omitiéndose. Recursos de bucket (`$bucketsdir`) con
+  copia privada por instalación antes de `pre_install`.

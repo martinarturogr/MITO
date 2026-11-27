@@ -21,6 +21,7 @@ use serde_json::{Value, json};
 use crate::engine::Engine;
 use crate::environment::bins;
 use crate::error::{Error, Result, bail, io_error, step};
+use crate::extensions::HookContext;
 use crate::fsutil::{copy_file, create_dir_all, is_link};
 use crate::profiles::Profile;
 use crate::record::{Record, Records, effective};
@@ -503,13 +504,30 @@ impl Engine {
             Message::new("Preparando {p1}").arg("p1", key),
             true,
         );
+        // La aprobación de los orígenes remotos ya se pidió al planificar.
+        let origins = self.catalog()?.resource_sources(key, &m)?;
+        crate::resources::prepare_resources(
+            &origins,
+            &stage.join("hook-buckets"),
+            self.extensions().downloader.as_ref(),
+            operation,
+            log,
+        )?;
         operation.check()?;
+        let hook_context = HookContext {
+            layout,
+            key,
+            manifest: &m,
+            payload: &payload,
+            log,
+            network: self.extensions().network.as_ref(),
+        };
         step(layout, "install", "pre-install", Some(key), || {
-            self.extensions().hooks.pre_install(key, &m, &payload)
+            self.extensions().hooks.pre_install(&hook_context)
         })?;
         operation.check()?;
         step(layout, "install", "installer", Some(key), || {
-            self.extensions().hooks.installer(key, &m, &payload)
+            self.extensions().hooks.installer(&hook_context)
         })?;
         operation.check()?;
         log(Message::new("Validando {p1}").arg("p1", key).into());

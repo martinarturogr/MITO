@@ -1629,6 +1629,7 @@ dependencies = [
  "mito-core",
  "mito-transfer",
  "mito-win",
+ "regex",
  "serde_json",
  "tempfile",
  "thiserror 2.0.21",
