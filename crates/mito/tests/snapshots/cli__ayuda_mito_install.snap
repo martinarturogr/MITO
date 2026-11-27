@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Instalar un componente y sus dependencias
+
+Usage: mito install [OPTIONS] <APP>
+
+Arguments:
+  <APP>  Componente (`bucket/app` o `app`)
+
+Options:
+      --profile <PROFILE>  Profile en el que activarlo
+  -h, --help               Print help

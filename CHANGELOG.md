@@ -22,3 +22,11 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   original, clasificación de compatibilidad, búsqueda con ranking, snapshots de buckets
   (refresco desde el ZIP de GitHub sin extraerlo, importación local, consulta diaria de
   manifiestos instalados) y filtros de buckets.
+- F4: `mito-engine` con profiles, inventario `.mito.json`, construcción del entorno y
+  shims, instalación con dependencias, staging, publicación con rollback, copias por
+  profile, componentes (actualizar, eliminar, versiones) y lanzamiento de aplicaciones,
+  binarios y shells; puntos de extensión para las fases posteriores (ADR 0009).
+- F4: CLI `mito.exe` con los subcomandos del original (`installed`, `logs`, `doctor`,
+  `bucket`, `search`, `profile`, `install`, `activate`, `deactivate`, `shell`, `run`) y
+  `mito.cmd` en la raíz; los comandos de fases posteriores se reconocen y avisan de que aún
+  no están disponibles.

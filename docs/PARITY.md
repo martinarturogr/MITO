@@ -17,19 +17,19 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 
 | Módulo Python | Líneas | Responsabilidad | Crate Rust | Fase | Estado |
 |---|---:|---|---|---|---|
-| `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito | F4 | ⬜ |
+| `__main__.py` | 354 | Punto de entrada de la CLI y despacho de subcomandos | mito (`app`, `cli`) | F4 (comandos de otras fases parseados) | 🟨 |
 | `archives.py` | 104 | Extrae archivos comprimidos sin ejecutar instaladores descargados | mito-transfer (`archives`) | F2 (MSI/Inno → F7) | ✅ |
-| `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito | F4 | ⬜ |
+| `arguments.py` | 26 | Divide cadenas de argumentos de línea de comandos en Windows | mito-engine (`arguments::split`) | F4 | ✅ |
 | `bootstrap_tools.py` | 56 | Asegura herramientas privadas del runtime, verificadas por hash | mito | F5 | ⬜ |
 | `bucket_resources.py` | 80 | Snapshots privados por instalación para referencias `$bucketsdir` en hooks | mito-catalog (`resources`) | F3 orígenes; F7 `prepare` | 🟨 |
 | `burn.py` | 201 | Lee CABs de bundles WiX 3 Burn como datos, sin ejecutarlos | mito-win | F7 | ⬜ |
 | `catalog.py` | 262 | Modelo del catálogo: manifiestos, instaladores y huellas | mito-catalog (`manifest`, `pyjson`, `compat`, `buckets`, `archive`) | F3 | ✅ |
-| `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine | F4 | ⬜ |
+| `components.py` | 331 | Ciclo de vida genérico de componentes instalados, sin nombres de app | mito-engine (`components`) | F4 | ✅ |
 | `configuration.py` | 146 | Almacenamiento del editor de configuración; sólo guardados explícitos escriben | mito-core (`config`) | F1 | ✅ |
 | `configuration_ui.py` | 129 | Diálogo Textual de configuración global | mito-tui | F6 | ⬜ |
 | `diagnostics.py` | 150 | Diagnósticos locales acotados, usables por el Python de bootstrap | mito-core (`diagnostics`) | F1 | ✅ |
 | `dialog_header.py` | 22 | Cabecera común de diálogos Textual | mito-tui | F6 | ⬜ |
-| `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine | F4 | ⬜ |
+| `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine (`engine`, `profiles`, `inventory`, `environment`, `install`, `publish`, `launch`) | F4 (hooks F7, terminal F5, traslado F11) | ✅ |
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
 | `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ⬜ |
 | `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-win | F8 | ⬜ |
@@ -39,8 +39,8 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `i18n.py` | 109 | Traducción de mensajes MITO; catálogos y salida externa no se traducen | mito-i18n | F1 | ✅ |
 | `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-win | F8 | ⬜ |
 | `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-win | F7 | ⬜ |
-| `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine | F4 | ⬜ |
-| `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-engine | F4 | ⬜ |
+| `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine (`isolation`) | F4 | ✅ |
+| `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-mcp | F12 | ⬜ |
 | `localized_ui.py` | 17 | Traduce enlaces por instancia sin cambiar clases Textual | mito-tui | F6 | ⬜ |
 | `mcp_server.py` | 125 | Proceso HTTP MCP alojado en la pestaña de Windows Terminal | mito-mcp | F12 | ⬜ |
 | `mcp_service.py` | 143 | Ciclo de vida del servidor MCP controlado por el gestor | mito-mcp | F12 | ⬜ |
@@ -61,10 +61,10 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `pocketool_git.py` | 199 | Operaciones Git explícitas en el repositorio de Pocketools | mito-engine | F10 | ⬜ |
 | `pocketools.py` | 194 | Paquetes de scripts compartidos: snapshots validados, sin hooks | mito-engine | F10 | ⬜ |
 | `pocketools_ui.py` | 113 | Diálogo Textual de Pocketools | mito-tui | F10 | ⬜ |
-| `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-win | F4 | ⬜ |
+| `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-engine (`launch`, flags de creación); Job Objects en F8 | F4 / F8 | 🟨 |
 | `profile_files.py` | 399 | Archivos de configuración elegidos a mano en la tabla files del profile | mito-engine | F11 | ⬜ |
 | `profile_files_ui.py` | 188 | Diálogo Textual para elegir archivos de configuración del profile | mito-tui | F11 | ⬜ |
-| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui | F4 | ⬜ |
+| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui | F6 | ⬜ |
 | `profile_transfer.py` | 123 | Comparte selecciones del catálogo y archivos elegidos; nunca serializa profiles | mito-engine | F11 | ⬜ |
 | `profile_transfer_ui.py` | 174 | Diálogos Textual de exportación e importación de profiles | mito-tui | F11 | ⬜ |
 | `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-win | F8 | ⬜ |
@@ -76,7 +76,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `self_update.py` | 508 | Actualizaciones explícitas de release, aplicadas por runtime desechable | mito-engine | F11 | ⬜ |
 | `self_update_ui.py` | 49 | Revisión humana antes de descargar una release de MITO | mito-tui | F11 | ⬜ |
 | `shortcuts.py` | 233 | Accesos directos de aplicaciones en el escritorio de Windows | mito-win | F8 | ⬜ |
-| `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito | F4 | ⬜ |
+| `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito (inicio de `diagnostics` y panic hook) | F4 | ✅ |
 | `storage.py` | 114 | Rutas y JSON seguros, YitoError, identificadores y bloqueo de mutaciones | mito-core (`storage`, `lock`, `error`) | F1 | ✅ |
 | `storage_migration.py` | 76 | Conversión única de directorios de versión a rutas estables | mito-core | F11 | ⬜ |
 | `terminal.py` | 173 | Una ventana privada de Windows Terminal con activaciones de MITO | mito-terminal | F5 | ⬜ |
@@ -93,18 +93,18 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 
 | Test Python | Nº de tests | Fase | Tests Rust equivalentes | Estado |
 |---|---:|---|---|---|
-| `test_activation.py` | 11 | F4 |  | ⬜ |
+| `test_activation.py` | 11 | F4 | `mito-engine` (persistencia y reubicación); el resto depende de F5/F7 | 🟨 |
 | `test_application_entries.py` | 2 | F8 |  | ⬜ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`); `prepare` en F7 | 🟨 |
 | `test_burn.py` | 8 | F7 |  | ⬜ |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
-| `test_cli.py` | 12 | F4 |  | ⬜ |
-| `test_component_environment.py` | 2 | F4 |  | ⬜ |
-| `test_components.py` | 17 | F4 |  | ⬜ |
+| `test_cli.py` | 12 | F4 | `crates/mito/tests` (7 aplicables; 5 dependen de F8/F11, con su parseo cubierto) | 🟨 |
+| `test_component_environment.py` | 2 | F4 | `mito-engine` (2) | ✅ |
+| `test_components.py` | 17 | F4 | `mito-engine/tests/components.rs` (15); 2 en catalog/F8 | ✅ |
 | `test_configuration.py` | 4 | F1 | `mito-core::config` (4) | ✅ |
 | `test_diagnostics.py` | 10 | F1 | `mito-core::diagnostics` (5); 5 dependen de `bootstrap.ps1` ➖ | ✅ |
-| `test_engine.py` | 47 | F4 |  | ⬜ |
+| `test_engine.py` | 47 | F4 | `mito-engine/tests/engine.rs` (31 tests del motor; 5 de campos de manifiesto ya en catalog/transfer); 15 dependen de F7 y 1 de F8 | 🟨 |
 | `test_error_tracking.py` | 15 | F1 | `mito-core::error_tracking` (parte local de 5); 10 dependen de PostHog ➖ | ✅ |
 | `test_host_apps.py` | 9 | F8 |  | ⬜ |
 | `test_host_data.py` | 10 | F8 |  | ⬜ |
@@ -113,7 +113,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_i18n.py` | 9 | F1 | `mito-i18n` (6); 3 de interfaz pasan a F6 | 🟨 |
 | `test_inno.py` | 10 | F7 |  | ⬜ |
 | `test_installer_files.py` | 6 | F7 |  | ⬜ |
-| `test_isolation.py` | 6 | F4 |  | ⬜ |
+| `test_isolation.py` | 6 | F4 | `mito-engine` (5); 1 cubierto en `mito-core::persistence` | ✅ |
 | `test_mcp.py` | 15 | F12 |  | ⬜ |
 | `test_mcp_ui.py` | 3 | F12 |  | ⬜ |
 | `test_move_whole.py` | 5 | F11 |  | ⬜ |
@@ -135,7 +135,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_search.py` | 4 | F3 | `mito-catalog::search` (4) | ✅ |
 | `test_self_update.py` | 28 | F11 |  | ⬜ |
 | `test_shortcuts.py` | 16 | F8 |  | ⬜ |
-| `test_stable_storage.py` | 7 | F4 | Son tests de motor y migración, no de `storage.py`; `storage` tiene tests propios | ⬜ |
+| `test_stable_storage.py` | 7 | F4 | `mito-engine` (4); 3 de migración en F11 | 🟨 |
 | `test_terminal.py` | 10 | F5 |  | ⬜ |
 | `test_terminal_identity.py` | 4 | F5 |  | ⬜ |
 | `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
@@ -152,26 +152,26 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito` / `mito ui [--profile]` | F6 | ⬜ |
 | `mito start [--profile]` | F5 | ⬜ |
 | `mito bootstrap` | F5 | ⬜ |
-| `mito installed` | F4 | ⬜ |
-| `mito logs` | F4 (API lista en F1: `diagnostics::locations`) | ⬜ |
-| `mito doctor` | F4 | ⬜ |
+| `mito installed` | F4 | ✅ |
+| `mito logs` | F4 (API lista en F1: `diagnostics::locations`) | ✅ |
+| `mito doctor` | F4 | ✅ |
 | `mito posthog-check` | F1 (PostHog) | ➖ no aplica (ver fuera de alcance) |
 | `mito migrate-storage` | F11 | ⬜ |
-| `mito bucket import <name> <source>` | F4 (API lista en F3: `Catalog::import_bucket`) | ⬜ |
-| `mito bucket refresh [name]` | F4 (API lista en F3: `Catalog::refresh_sources`) | ⬜ |
-| `mito search [query] [--compatible]` | F4 (API lista en F3: `search::rank_entries`, `compat::compatibility`) | ⬜ |
-| `mito profile create <name> [--workspace]` | F4 | ⬜ |
-| `mito profile delete <name>` | F4 | ⬜ |
+| `mito bucket import <name> <source>` | F4 (API lista en F3: `Catalog::import_bucket`) | ✅ |
+| `mito bucket refresh [name]` | F4 (API lista en F3: `Catalog::refresh_sources`) | ✅ |
+| `mito search [query] [--compatible]` | F4 (API lista en F3: `search::rank_entries`, `compat::compatibility`) | ✅ |
+| `mito profile create <name> [--workspace]` | F4 | ✅ |
+| `mito profile delete <name>` | F4 | ✅ |
 | `mito profile export <name> <output>` | F11 | ⬜ |
 | `mito profile import <source> --name` | F11 | ⬜ |
-| `mito profile list` | F4 | ⬜ |
-| `mito profile show <name>` | F4 | ⬜ |
-| `mito install <app> [--profile]` | F4 | ⬜ |
-| `mito activate <installation> --profile` | F4 | ⬜ |
-| `mito deactivate <installation> --profile` | F4 | ⬜ |
-| `mito shell --profile [--type cmd\|powershell]` | F4 | ⬜ |
+| `mito profile list` | F4 | ✅ |
+| `mito profile show <name>` | F4 | ✅ |
+| `mito install <app> [--profile]` | F4 | ✅ |
+| `mito activate <installation> --profile` | F4 | ✅ |
+| `mito deactivate <installation> --profile` | F4 | ✅ |
+| `mito shell --profile [--type cmd\|powershell]` | F4 | ✅ |
 | `mito terminal --profile [--type] [--new]` | F5 | ⬜ |
-| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ⬜ |
+| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ✅ |
 | `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ⬜ |
 | `mito shortcut --profile [--badge] [--color]` | F8 | ⬜ |
 | `mito host-run --profile …` | F8 | ⬜ |
@@ -230,3 +230,9 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Snapshots, ZIP de bucket y filtros inválidos** dan un error de dominio con mensaje («Snapshot de catálogo no válido», «Archivo ZIP no válido», «JSON no válido en…», «Filtros de catálogo no válidos», «El manifiesto debe ser un objeto JSON»).
 - **ZIP de bucket con límite de bytes reales leídos**, además del tamaño declarado.
 - **Red y configuración inyectadas** (ADR 0008): el catálogo recibe `BucketSources` y un `Fetcher`; la CLI de F4 los construye desde `config.properties` y `mito-transfer`.
+- **Puntos de extensión del motor** (ADR 0009): hasta su fase, un manifiesto con `pre_install`/`installer` falla antes de descargar con «Pasos no soportados: …»; `--coupled`/`--owned` y el terminal del profile devuelven «no soportado todavía».
+- **Shims de `bin`** invocan `core\bin\mito.exe run …` en lugar del Python privado; se escriben con CRLF.
+- **`profile()` sin `workspace`** da el error de dominio «El profile no define workspace» en lugar de un `KeyError`.
+- **`version_key`** con un número que no cabe en 128 bits no es candidata a actualización (Python usa enteros sin límite).
+- **`.mito.json`** se escribe una sola vez con el registro completo (incluido `pinned`); el original lo escribía dos veces con el mismo resultado.
+- **Rollback de la publicación** sin interrumpirse por errores secundarios; nunca sigue las junctions de persistencia al borrar (test de regresión).

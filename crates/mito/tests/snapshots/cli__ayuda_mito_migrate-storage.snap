@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Convertir instalaciones antiguas a rutas estables, con las aplicaciones cerradas
+
+Usage: mito migrate-storage
+
+Options:
+  -h, --help  Print help

@@ -22,9 +22,10 @@ pub fn create_junction(target: &Path, link: &Path) -> io::Result<()> {
 
 /// Indica si `path` es un junction (un punto de reanálisis de tipo `MOUNT_POINT`).
 ///
-/// Devuelve `false` si la ruta no existe. Los enlaces simbólicos no cuentan.
+/// Devuelve `false` si la ruta no existe. Los enlaces simbólicos no cuentan. Un junction
+/// cuyo destino ya no existe (p. ej. tras mover la raíz de la instancia) sigue siéndolo.
 pub fn is_junction(path: &Path) -> bool {
-    junction::exists(path).unwrap_or(false)
+    junction::exists(path).unwrap_or(false) || junction::get_target(path).is_ok()
 }
 
 /// Indica si `path` es un enlace simbólico (de archivo o de directorio).
@@ -87,6 +88,20 @@ mod tests {
         remove_junction(&link).unwrap();
         assert!(!link.exists());
         assert!(target.join("dato.txt").exists());
+    }
+
+    #[test]
+    fn un_junction_con_destino_inexistente_sigue_siendo_un_junction() {
+        let dir = tempfile::tempdir().unwrap();
+        let target = dir.path().join("destino");
+        fs::create_dir(&target).unwrap();
+        let link = dir.path().join("enlace");
+        create_junction(&target, &link).unwrap();
+        fs::remove_dir(&target).unwrap();
+        assert!(is_junction(&link));
+        assert!(!is_symlink(&link));
+        remove_junction(&link).unwrap();
+        assert!(fs::symlink_metadata(&link).is_err());
     }
 
     #[test]

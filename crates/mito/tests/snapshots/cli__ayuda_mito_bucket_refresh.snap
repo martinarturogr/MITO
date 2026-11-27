@@ -1,0 +1,13 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Reimportar los buckets configurados
+
+Usage: mito bucket refresh [NAME]
+
+Arguments:
+  [NAME]  Solo este bucket
+
+Options:
+  -h, --help  Print help

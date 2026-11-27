@@ -1,0 +1,35 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Tu entorno de desarrollo en una carpeta
+
+Usage: mito [COMMAND]
+
+Commands:
+  ui               Abrir la interfaz Textual
+  start            Abrir MITO en Windows Terminal portable
+  bootstrap        Preparar herramientas privadas
+  installed        Listar todos los componentes instalados
+  logs             Mostrar las carpetas de diagnóstico local
+  pocketool-run    Ejecutar un comando Pocketool en una pestaña de MITO
+  host-run         Abrir un ejecutable externo con un profile de MITO
+  doctor           Comprobar runtime y estado
+  migrate-storage  Convertir instalaciones antiguas a rutas estables, con las aplicaciones cerradas
+  bucket           Gestionar buckets
+  search           Buscar componentes en el catálogo
+  profile          Gestionar profiles
+  install          Instalar un componente y sus dependencias
+  activate         Activar un componente instalado en un profile
+  deactivate       Desactivar un componente en un profile
+  shell            Abrir una shell (o ejecutar un comando) en el entorno de un profile
+  terminal         Abrir la terminal de un profile
+  run              Ejecutar una aplicación o un comando de un componente
+  app-shortcut     Crear un acceso de aplicación en el escritorio
+  shortcut         Acceso a MITO en el escritorio
+  release          Incrementar versión y publicar en GitHub
+  help             Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version

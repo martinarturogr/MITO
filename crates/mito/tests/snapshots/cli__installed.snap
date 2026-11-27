@@ -1,0 +1,5 @@
+---
+source: crates/mito/tests/cli.rs
+expression: installed
+---
+main/tool                                                         1.0

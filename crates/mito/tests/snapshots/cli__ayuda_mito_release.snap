@@ -1,0 +1,15 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Incrementar versión y publicar en GitHub
+
+Usage: mito release [OPTIONS] [KIND]
+
+Arguments:
+  [KIND]  mayor: X.0.1; minor: M.X.1; hotfix: M.m.X (defecto) [possible values: mayor, minor, hotfix]
+
+Options:
+      --local            Sólo generar ZIP local, sin incrementar ni publicar
+      --output <OUTPUT>  Directorio de salida (defecto: releases)
+  -h, --help             Print help

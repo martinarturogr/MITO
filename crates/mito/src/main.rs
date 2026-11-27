@@ -1,26 +1,40 @@
 //! Punto de entrada de `mito.exe`: CLI compatible con `mito.cmd` del MITO original.
 #![forbid(unsafe_code)]
 
-use clap::Parser;
+mod app;
+mod cli;
+mod console;
+mod doctor;
 
-/// My Integrated Terminal Orchestrator.
-///
-/// Entorno de desarrollo de Windows completo y portátil dentro de una carpeta.
-#[derive(Debug, Parser)]
-#[command(name = "mito", version, about, long_about = None, arg_required_else_help = true)]
-struct Cli {}
+use std::process;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+use clap::{CommandFactory as _, Parser as _};
+use mito_core::Operation;
+
+use crate::cli::Cli;
+use crate::console::Console;
 
 fn main() {
-    let _cli = Cli::parse();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::Cli;
-    use clap::CommandFactory;
-
-    #[test]
-    fn la_definicion_de_la_cli_es_valida() {
-        Cli::command().debug_assert();
+    let cli = Cli::parse();
+    if let Err(message) = cli.validate() {
+        // `parser.error` de argparse: uso y mensaje en stderr, código 2.
+        Cli::command()
+            .error(clap::error::ErrorKind::ArgumentConflict, message)
+            .exit();
     }
+    // Ctrl+C cancela la operación en curso y el proceso sale con 130 (`KeyboardInterrupt`).
+    let interrupted = Arc::new(AtomicBool::new(false));
+    let operation = Operation::silent();
+    {
+        let (flag, operation) = (Arc::clone(&interrupted), operation.clone());
+        // Si ya hay un manejador instalado no se puede cambiar; el proceso sigue sin él.
+        let _ = ctrlc::set_handler(move || {
+            flag.store(true, Ordering::SeqCst);
+            operation.cancel();
+        });
+    }
+    let code = app::run(cli, &Console::stdio(), &operation, &interrupted);
+    process::exit(code);
 }

@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Desactivar un componente en un profile
+
+Usage: mito deactivate --profile <PROFILE> <INSTALLATION>
+
+Arguments:
+  <INSTALLATION>  ID que muestra mito installed
+
+Options:
+      --profile <PROFILE>  Profile
+  -h, --help               Print help

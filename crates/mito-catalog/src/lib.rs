@@ -12,7 +12,7 @@ pub mod compat;
 pub mod error;
 pub mod manifest;
 pub mod pyjson;
-mod pypath;
+pub mod pypath;
 pub mod resources;
 pub mod search;
 

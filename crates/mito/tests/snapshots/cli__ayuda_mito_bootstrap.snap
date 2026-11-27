@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Preparar herramientas privadas
+
+Usage: mito bootstrap
+
+Options:
+  -h, --help  Print help

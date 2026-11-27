@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Listar todos los componentes instalados
+
+Usage: mito installed
+
+Options:
+  -h, --help  Print help

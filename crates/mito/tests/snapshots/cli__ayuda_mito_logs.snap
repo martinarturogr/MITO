@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Mostrar las carpetas de diagnóstico local
+
+Usage: mito logs
+
+Options:
+  -h, --help  Print help

@@ -1,0 +1,18 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Ejecutar una aplicación o un comando de un componente
+
+Usage: mito run [OPTIONS] --profile <PROFILE> --app <APP> [ARGUMENTS]...
+
+Arguments:
+  [ARGUMENTS]...  Argumentos de la aplicación (tras `--`)
+
+Options:
+      --profile <PROFILE>    Profile
+      --app <APP>            Componente (`bucket/app` o `app`)
+      --bin <BIN>            Alias de un `bin` en lugar de la aplicación
+      --shortcut <SHORTCUT>  Etiqueta del acceso declarado
+      --coupled              Acoplar a una pestaña de la terminal
+  -h, --help                 Print help

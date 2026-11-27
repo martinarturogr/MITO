@@ -1,0 +1,5 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"search\", \"git\"])"
+---
+main/gittool                                 2.5.1                Compatible

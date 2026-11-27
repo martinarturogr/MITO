@@ -28,6 +28,7 @@ anyhow = "1.0.105"
 caseless = "0.2.2"
 jiff = "1.0.3"
 clap = { version = "4.6.10", features = ["derive"] }
+ctrlc = "3.5.3"
 dunce = "1.0.5"
 junction = "2.1.0"
 regex = "1.13.2"
@@ -57,6 +58,7 @@ unicode-normalization = "0.1.26"
 
 # Tests
 assert_cmd = "2.2.2"
+insta = "1.49.0"
 predicates = "3.1.4"
 proptest = "1.12.0"
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }

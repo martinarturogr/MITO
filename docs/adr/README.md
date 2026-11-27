@@ -13,3 +13,4 @@ sustituye por otro nuevo que lo indique.
 | [0006](0006-errores-y-unsafe.md) | Política de errores y de `unsafe` | Aceptado |
 | [0007](0007-solo-log-local.md) | Solo log local, sin telemetría remota | Aceptado |
 | [0008](0008-criterios-del-port-y-kernel.md) | Criterios del port y kernel compartido | Aceptado |
+| [0009](0009-motor-con-puntos-de-extension.md) | Motor con puntos de extensión para fases posteriores | Aceptado |
