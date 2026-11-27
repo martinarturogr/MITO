@@ -1,0 +1,8 @@
+{
+  "version": "20.1.0",
+  "description": "Entorno de ejecucion de JavaScript (fixture)",
+  "homepage": "https://example.org/nodejs",
+  "url": "https://example.org/node-20.1.0.zip",
+  "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "bin": "node.exe"
+}

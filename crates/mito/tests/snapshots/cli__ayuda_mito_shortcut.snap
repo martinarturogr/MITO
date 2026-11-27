@@ -1,0 +1,13 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Acceso a MITO en el escritorio
+
+Usage: mito shortcut [OPTIONS] --profile <PROFILE>
+
+Options:
+      --profile <PROFILE>  Profile
+      --badge <BADGE>      Texto de la insignia
+      --color <COLOR>      Color de la insignia
+  -h, --help               Print help

@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Importar un bucket desde un repositorio GitHub o una carpeta local
+
+Usage: mito bucket import <NAME> <SOURCE>
+
+Arguments:
+  <NAME>    Nombre del bucket
+  <SOURCE>  Repositorio GitHub HTTPS o carpeta local
+
+Options:
+  -h, --help  Print help

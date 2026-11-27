@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Importar un profile
+
+Usage: mito profile import --name <NAME> <SOURCE>
+
+Arguments:
+  <SOURCE>  Archivo de origen
+
+Options:
+      --name <NAME>  Nombre del nuevo profile
+  -h, --help         Print help

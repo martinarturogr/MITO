@@ -1,0 +1,16 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Ejecutar un comando Pocketool en una pestaña de MITO
+
+Usage: mito pocketool-run --profile <PROFILE> --package <PACKAGE> --entry <ENTRY> [ARGUMENTS]...
+
+Arguments:
+  [ARGUMENTS]...  Argumentos del comando (tras `--`)
+
+Options:
+      --profile <PROFILE>  Profile
+      --package <PACKAGE>  Paquete de Pocketool
+      --entry <ENTRY>      Punto de entrada
+  -h, --help               Print help

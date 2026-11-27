@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Exportar un profile
+
+Usage: mito profile export <NAME> <OUTPUT>
+
+Arguments:
+  <NAME>    Nombre
+  <OUTPUT>  Archivo de salida
+
+Options:
+  -h, --help  Print help

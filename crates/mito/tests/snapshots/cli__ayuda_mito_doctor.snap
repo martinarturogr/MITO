@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Comprobar runtime y estado
+
+Usage: mito doctor
+
+Options:
+  -h, --help  Print help

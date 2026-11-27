@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "description": "Modulo de PowerShell (fixture incompatible)",
+  "url": "https://example.org/pwsh-module.zip",
+  "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "psmodule": {"name": "Demo"}
+}

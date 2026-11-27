@@ -1,0 +1,15 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Abrir una shell (o ejecutar un comando) en el entorno de un profile
+
+Usage: mito shell [OPTIONS] --profile <PROFILE> [ARGUMENTS]...
+
+Arguments:
+  [ARGUMENTS]...  Comando y argumentos (tras `--`)
+
+Options:
+      --profile <PROFILE>  Profile
+      --type <TYPE>        Intérprete de comandos [default: cmd] [possible values: cmd, powershell]
+  -h, --help               Print help

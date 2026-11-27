@@ -1,0 +1,14 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Crear un profile
+
+Usage: mito profile create [OPTIONS] <NAME>
+
+Arguments:
+  <NAME>  Nombre
+
+Options:
+      --workspace <WORKSPACE>  Workspace (por defecto, el nombre del profile)
+  -h, --help                   Print help

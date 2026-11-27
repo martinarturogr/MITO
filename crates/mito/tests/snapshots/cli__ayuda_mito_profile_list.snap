@@ -1,0 +1,10 @@
+---
+source: crates/mito/tests/cli.rs
+expression: text
+---
+Listar los profiles
+
+Usage: mito profile list
+
+Options:
+  -h, --help  Print help

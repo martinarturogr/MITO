@@ -1,0 +1,7 @@
+---
+source: crates/mito/tests/cli.rs
+expression: "instance.ok(&[\"search\"])"
+---
+main/gittool                                 2.5.1                Compatible
+main/nodejs                                  20.1.0               Compatible
+main/pwsh-module                             1.0                  Pasos no soportados: psmodule
