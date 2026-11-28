@@ -158,7 +158,8 @@ mod tests {
     fn las_etiquetas_se_escapan_como_dato() {
         // `test_native_labels_are_escaped_as_data` de `test_i18n.py`.
         assert_eq!(
-            localize_script("$title = 'Open'", &["Open"], &|_| "User's $folder".to_owned()),
+            localize_script("$title = 'Open'", &["Open"], &|_| "User's $folder"
+                .to_owned()),
             "$title = 'User''s $folder'"
         );
     }
