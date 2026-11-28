@@ -27,7 +27,7 @@ Registrar ejecutables externos del host Windows (`.exe`, `.bat`, `.cmd`, `.ps1`)
 
 Constantes: `EXTENSIONS = {'.exe', '.bat', '.cmd', '.ps1'}`; `SHORTCUT_FOLDERS = (2, 23, 16, 25)`.
 
-Identidad: `identity = sha256(str(path).casefold().encode()).hexdigest()[:16]`, con `path` ya `resolve()`. Ejemplo: `C:\Apps\Editor\editor.exe` → `c853055b51894dc9`.
+Identidad: `identity = sha256(str(path).casefold().encode()).hexdigest()[:16]`, con `path` ya `resolve()`. Ejemplo: `C:\Apps\Editor\editor.exe` → `2c01437f9a3ead99`.
 
 ## Formatos de disco
 
@@ -37,7 +37,7 @@ Objeto JSON que mapea identidad a ruta absoluta. Se escribe con `write_json` (UT
 
 ```json
 {
-  "c853055b51894dc9": "C:\\Apps\\Editor\\editor.exe"
+  "2c01437f9a3ead99": "C:\\Apps\\Editor\\editor.exe"
 }
 ```
 
@@ -54,7 +54,7 @@ Objeto JSON que mapea identidad a ruta absoluta. Se escribe con `write_json` (UT
   "badge": "DEV",
   "color": "naranja",
   "profile": "test",
-  "application": "c853055b51894dc9",
+  "application": "2c01437f9a3ead99",
   "coupled": false,
   "arguments": []
 }
