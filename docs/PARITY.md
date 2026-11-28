@@ -33,7 +33,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
 | `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ✅ |
 | `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-desktop (`host_apps`) y comando `host-run` | F8 (falta `shortcut`) | 🟨 |
-| `host_apps_ui.py` | 190 | Diálogos Textual de aplicaciones del host | mito-tui | F8 | ⬜ |
+| `host_apps_ui.py` | 190 | Diálogos Textual de aplicaciones del host | mito-tui (`dialogs::host_info`, `remove_host`, `host_discover`, `host_confirm`) | F8 | ✅ |
 | `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-desktop (`host_data`) | F8 | ✅ |
 | `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-desktop (`host_exposure`) | F8 | ✅ |
 | `i18n.py` | 109 | Traducción de mensajes MITO; catálogos y salida externa no se traducen | mito-i18n | F1 | ✅ |
@@ -51,7 +51,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
-| `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui | F8 | ⬜ |
+| `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui (`dialogs::open_with`) | F8 | ✅ |
 | `operation.py` | 110 | Progreso y cancelación cooperativa de la operación en curso | mito-core (`operation`) | F1 | ✅ |
 | `path_limit.py` | 44 | Protección MAX_PATH para la raíz portable en Windows | mito-core (`path_limit`) | F5 | ✅ |
 | `persistence.py` | 101 | Persiste directorios y archivos bajo un único home y reconstruye enlaces | mito-core (`persistence`) + mito-win (`links`) | F1 | ✅ |
@@ -64,11 +64,11 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-engine (`launch`, flags de creación); `mito-win::jobs` y `mito::jobs` (`--owned`, `--coupled`) en F8; `ProcessHandle` y pipes en F12 | F4 / F8 / F12 | 🟨 |
 | `profile_files.py` | 399 | Archivos de configuración elegidos a mano en la tabla files del profile | mito-engine | F11 | ⬜ |
 | `profile_files_ui.py` | 188 | Diálogo Textual para elegir archivos de configuración del profile | mito-tui | F11 | ⬜ |
-| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui (`dialogs::manage_profile`, `dialogs::delete_profile`) | F6 (exportar, importar, acceso directo y archivos: F8/F11) | 🟨 |
+| `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui (`dialogs::manage_profile`, `dialogs::delete_profile`) | F6; «Acceso directo» F8 (exportar, importar y archivos: F11) | 🟨 |
 | `profile_transfer.py` | 123 | Comparte selecciones del catálogo y archivos elegidos; nunca serializa profiles | mito-engine | F11 | ⬜ |
 | `profile_transfer_ui.py` | 174 | Diálogos Textual de exportación e importación de profiles | mito-tui | F11 | ⬜ |
 | `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-win | F8 | ⬜ |
-| `protocols_ui.py` | 171 | Diálogo que reclama esquemas URL mientras permanece abierto | mito-tui | F8 | ⬜ |
+| `protocols_ui.py` | 171 | Diálogo que reclama esquemas URL mientras permanece abierto | mito-tui (`dialogs::protocols`; la sesión de `mito_desktop::protocols` vive en su hilo) | F8 | ✅ |
 | `publish.py` | 225 | Publica releases numeradas con la credencial Git de GitHub | mito-engine | F11 | ⬜ |
 | `release.py` | 71 | Construye distribuible desde lista blanca explícita, nunca datos de usuario | mito-engine | F11 | ⬜ |
 | `relocation.py` | 268 | Repara rutas absolutas de instancias movidas o copiadas | mito-engine | F11 | ⬜ |
@@ -83,7 +83,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal (`branding`) + mito-win (`resources`) | F5 | ✅ |
 | `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal (`identity`) + mito-win (`taskbar`) | F5 | ✅ |
 | `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
-| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui (`app`, `dialogs`, `model`, `worker`) | F6 (sin host, red, MCP, «Versiones…»: fases posteriores) | 🟨 |
+| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui (`app`, `dialogs`, `model`, `worker`, `integration`) | F6 y F8 (host, accesos, Extensiones, Protocolos y Host · ✓/✗; sin red, Pocketools, MCP, actualizar MITO ni «Versiones…»: fases posteriores) | 🟨 |
 | `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-catalog (`checks`) | F3 `daily`; F11 consultas de MITO | 🟨 |
 | `versions.py` | 324 | Versiones previas de componentes desde histórico Git y autoupdate | mito-core | F11 | ⬜ |
 
@@ -108,7 +108,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_error_tracking.py` | 15 | F1 | `mito-core::error_tracking` (parte local de 5); 10 dependen de PostHog ➖ | ✅ |
 | `test_host_apps.py` | 9 | F8 | `mito-desktop::host_apps` (registro, entorno, `.exe`/`.bat`/`.cmd`/`.ps1` reales, descubrimiento, acoplado); el acceso directo (`shortcut`) y el diálogo de descubrimiento quedan pendientes | 🟨 |
 | `test_host_data.py` | 10 | F8 | `mito-desktop::host_data` (10, con junctions reales y raíces del host inyectadas) | ✅ |
-| `test_host_data_ui.py` | 2 | F8 |  | ⬜ |
+| `test_host_data_ui.py` | 2 | F8 | `mito-tui::app::tests_f8` (los 2: oferta de `data` y `cache` por separado y enlace manual con cancelar, reemplazar y desenlazar) | ✅ |
 | `test_host_exposure.py` | 6 | F8 | `mito-desktop::host_exposure` (6, más aparte, plan, retirada y formato del registro) | ✅ |
 | `test_i18n.py` | 9 | F1 | `mito-i18n` (6); 3 de interfaz pasan a F6 | 🟨 |
 | `test_inno.py` | 10 | F7 | `mito-transfer::archives::inno` y `mito-engine/tests/extractors.rs` (9) y `crates/mito/tests/hooks.rs` (`expand_inno`) | ✅ |
@@ -139,7 +139,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_terminal.py` | 10 | F5 | `mito-terminal` (10, golden de `settings.json` con insta) | ✅ |
 | `test_terminal_identity.py` | 4 | F5 | `mito-terminal::identity` (3); 1 simula la vtable de `IPropertyStore` ➖ | ✅ |
 | `test_transfer.py` | 10 | F2 | `mito-transfer/tests/download.rs`, `tls.rs` (los 10, más huecos sin test del original); las comprobaciones de `Catalog.compatibility` están en F3 | ✅ |
-| `test_ui.py` | 26 | F6 | `mito-tui::app::tests` (los de F6, sobre `TestBackend` y un reloj inyectado) | 🟨 |
+| `test_ui.py` | 26 | F6 / F8 | `mito-tui::app::tests` (los de F6) y `app::tests_f8` (los de F8: `test_host_application_add_open_shortcut_info_and_remove`, `test_application_buttons_only_visible_for_active_launchable_app`, `test_mito_shortcut_and_delete_selected_profile`, más «Extensiones», «Protocolos» y «Host · ✓/✗»), sobre `TestBackend`, un reloj inyectado, y escritorio, `AppData` y registro temporales | 🟨 |
 | `test_update_checks.py` | 10 | F11 | `mito-catalog::checks` (`daily`) | 🟨 |
 | `test_versions.py` | 7 | F11 |  | ⬜ |
 

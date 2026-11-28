@@ -66,3 +66,11 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   biblioteca con dos binarios, `mito.exe` y `mitow.exe` (sin consola, errores en
   `logs/mito.log`), `run --owned` con Job Object real, `run --coupled`, `app-shortcut` y
   `shortcut` (ADR 0013).
+- F8 (TUI): la interfaz de texto activa lo de Windows: «Agregar aplicación del host» (con la
+  lista de hallazgos y el selector nativo), filas del host (Abrir, Cache/Data ✓/✗, Acc.
+  directo, Info y Eliminar), «Acc. directo» de cada aplicación y de «Gestionar profile»
+  (letras y color del icono), «Extensiones ✓/✗» («Abrir con»), «Protocolos» (reclama
+  esquemas y los vigila cada 5 s mientras el diálogo está abierto), «Host · ✓/✗» y el
+  selector «Proceso» de «Abrir» (`attached` lanza acoplado). El escritorio, el `AppData`
+  del host, el registro y los selectores se inyectan (`Integration`) para probar sin tocar
+  el sistema.

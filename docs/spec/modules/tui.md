@@ -283,3 +283,41 @@ Catálogo, panel de log con «Copiar log» (`mito_win::clipboard::set_text`), ca
 progreso a los 2 s, paso largo a los 2 s, avisos, `refresh_terminal_default` con
 `mito_terminal::settings::prepare`, `apply_safely` al arrancar y
 `ensure_default_profile` antes de abrir.
+
+## Alcance de F8 (integración con Windows)
+
+F8 activa lo que F6 ocultó y que ahora implementa `mito-desktop`. Sigue oculto lo de
+F9-F12 (red, Pocketools, MCP, «Actualizar MITO», «Exportar», «Importar» y «Archivos de
+configuración»).
+
+- **`integration::Integration`** reúne lo que toca el sistema: escritorio, `AppData` del
+  host, rama del registro de «Abrir con» y de protocolos, búsqueda de aplicaciones del
+  host, selectores nativos y lanzamiento del host. `Integration::system()` usa lo real;
+  las pruebas la sustituyen con `App::with_integration` (carpetas temporales,
+  `Classes::under("Software\MITO-tests\…")` y selectores falsos). El hilo de trabajo la
+  recibe con `worker::spawn_integrated`.
+- **Acciones nuevas** (`worker/desktop.rs`): `HostAdd`, `HostLink { identity, kind }`
+  (`host-cache`/`host-data`), `OpenWith`, `HostExpose`, `HostOpen`, `HostRemove`,
+  `HostShortcut`, `MitoShortcut` y `ApplicationShortcut`; `Launch` gana `coupled`.
+  Las preguntas de enlaces llegan por `Request::HostConfirm { message, label }`
+  (`HostDataConfirm`) y la elección de aplicación del host por `Report::Pick` con
+  respuesta `Pick::{Path, Browse, Cancel}`.
+- **Diálogos nuevos**: `ShortcutDialog`, `HostDiscoverDialog`, `HostInfoDialog`,
+  `RemoveHostDialog`, `HostDataConfirm`, `OpenWithDialog` y `ProtocolDialog`;
+  `OpenApplicationDialog` gana el selector «Proceso» (`detached`/`attached`, literal) y
+  «Gestionar profile» el botón «Acceso directo».
+- **`ProtocolDialog`** habla con un `ProtocolBackend`. El real, `ThreadedSession`, deja la
+  `mito_desktop::protocols::Session` (que toma prestado el motor) en su propio hilo; al
+  soltarse se cierra el canal y la sesión libera lo reclamado. El tic del diálogo vigila
+  cada `WATCH_SECONDS` (5 s).
+- **Inicio**: cada elemento ocupa tres filas (nombre y dos líneas de botones que fluyen
+  por el ancho), porque los ocho botones de un componente activo no caben en una línea
+  de 80 columnas. Los estados (`Extensiones ✓/✗`, `Host · ✓/✗`, `Cache · ✓/✗`,
+  `Data · ✓/✗`) se calculan en `model::host_state` al refrescar Inicio y cualquier error
+  de un estado cuenta como `✗`; solo la lectura de `host-applications.json` se registra
+  como error. Las filas del host usan `#593300`/`#8f5000`.
+- **Decisiones**: en la pregunta de «Host · …» el `{p0}` es `Roaming`/`Local`
+  (`Kind::folder`, el `KINDS` de `host_data` del contrato) y no «Data (AppData/Roaming)»
+  como resume `ui.md`; el diálogo de descubrimiento mueve la lista con ↑↓ aunque el foco
+  esté en el filtro; la lista de «Abrir con» y la de descubrimiento son una `Table` sin
+  cabecera.
