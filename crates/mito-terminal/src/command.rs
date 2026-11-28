@@ -301,3 +301,33 @@ pub fn launch_mcp(engine: &Engine, pipe: &str, owner: i64, session: &str) -> Res
     let argv = mcp_command(engine, pipe, owner, session)?;
     spawn(engine.root(), &argv)
 }
+
+#[cfg(test)]
+mod component_tests {
+    use super::*;
+
+    /// `test_coupled_launch_preserves_selection_before_arguments`.
+    #[test]
+    fn el_acoplado_conserva_la_seleccion_antes_de_los_argumentos() {
+        assert_eq!(
+            component_child(
+                "test",
+                "extras/editor",
+                Some("Help"),
+                &["argument".to_owned()]
+            ),
+            [
+                "run",
+                "--owned",
+                "--profile",
+                "test",
+                "--app",
+                "extras/editor",
+                "--shortcut",
+                "Help",
+                "--",
+                "argument"
+            ]
+        );
+    }
+}

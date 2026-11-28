@@ -32,7 +32,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine (`engine`, `profiles`, `inventory`, `environment`, `install`, `publish`, `launch`) | F4 (hooks F7, terminal F5, traslado F11) | ✅ |
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
 | `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ✅ |
-| `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-desktop (`host_apps`) y comando `host-run` | F8 (falta `shortcut`) | 🟨 |
+| `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-desktop (`host_apps`; acceso directo en `shortcuts::host_link`) y comando `host-run` | F8 | ✅ |
 | `host_apps_ui.py` | 190 | Diálogos Textual de aplicaciones del host | mito-tui (`dialogs::host_info`, `remove_host`, `host_discover`, `host_confirm`) | F8 | ✅ |
 | `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-desktop (`host_data`) | F8 | ✅ |
 | `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-desktop (`host_exposure`) | F8 | ✅ |
@@ -50,7 +50,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-desktop (`native`: `localize_script` y selectores del host) | F8 (los diálogos de credenciales F9 y de profiles F11 reutilizan `run_script`) | 🟨 |
 | `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
-| `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
+| `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-desktop (`open_with`) y mito-win (`registry`) | F8 | ✅ |
 | `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui (`dialogs::open_with`) | F8 | ✅ |
 | `operation.py` | 110 | Progreso y cancelación cooperativa de la operación en curso | mito-core (`operation`) | F1 | ✅ |
 | `path_limit.py` | 44 | Protección MAX_PATH para la raíz portable en Windows | mito-core (`path_limit`) | F5 | ✅ |
@@ -67,7 +67,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui (`dialogs::manage_profile`, `dialogs::delete_profile`) | F6; «Acceso directo» F8 (exportar, importar y archivos: F11) | 🟨 |
 | `profile_transfer.py` | 123 | Comparte selecciones del catálogo y archivos elegidos; nunca serializa profiles | mito-engine | F11 | ⬜ |
 | `profile_transfer_ui.py` | 174 | Diálogos Textual de exportación e importación de profiles | mito-tui | F11 | ⬜ |
-| `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-win | F8 | ⬜ |
+| `protocols.py` | 356 | Reclamo de esquemas URL (claude, vscode) para componentes MITO | mito-desktop (`protocols`) y mito-win (`registry`) | F8 | ✅ |
 | `protocols_ui.py` | 171 | Diálogo que reclama esquemas URL mientras permanece abierto | mito-tui (`dialogs::protocols`; la sesión de `mito_desktop::protocols` vive en su hilo) | F8 | ✅ |
 | `publish.py` | 225 | Publica releases numeradas con la credencial Git de GitHub | mito-engine | F11 | ⬜ |
 | `release.py` | 71 | Construye distribuible desde lista blanca explícita, nunca datos de usuario | mito-engine | F11 | ⬜ |
@@ -94,7 +94,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | Test Python | Nº de tests | Fase | Tests Rust equivalentes | Estado |
 |---|---:|---|---|---|
 | `test_activation.py` | 11 | F4 | `mito-engine` (persistencia y reubicación); el resto depende de F5/F7 | 🟨 |
-| `test_application_entries.py` | 2 | F8 |  | ⬜ |
+| `test_application_entries.py` | 2 | F8 | `mito-engine/tests/launch.rs` (`accesos_sin_persistencia_y_ayuda_explicita`) y `mito-terminal::command` (`el_acoplado_conserva_la_seleccion_antes_de_los_argumentos`) | ✅ |
 | `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`) y `mito-engine::resources` (`prepare`); tests en `crates/mito/tests/hooks.rs` | ✅ |
 | `test_burn.py` | 8 | F7 | `mito-transfer::archives::burn` (7) y `crates/mito/tests/hooks.rs` (confinamiento de los helpers); camino feliz de `Expand-DarkArchive` y `Expand-MsiArchive` verificado E2E con `main/chezscheme` | ✅ |
@@ -106,7 +106,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_diagnostics.py` | 10 | F1 | `mito-core::diagnostics` (5); 5 dependen de `bootstrap.ps1` ➖ | ✅ |
 | `test_engine.py` | 47 | F4 | `mito-engine/tests/engine.rs` (31 tests del motor; 5 de campos de manifiesto ya en catalog/transfer); 15 dependen de F7 y 1 de F8 | 🟨 |
 | `test_error_tracking.py` | 15 | F1 | `mito-core::error_tracking` (parte local de 5); 10 dependen de PostHog ➖ | ✅ |
-| `test_host_apps.py` | 9 | F8 | `mito-desktop::host_apps` (registro, entorno, `.exe`/`.bat`/`.cmd`/`.ps1` reales, descubrimiento, acoplado); el acceso directo (`shortcut`) y el diálogo de descubrimiento quedan pendientes | 🟨 |
+| `test_host_apps.py` | 9 | F8 | `mito-desktop::host_apps` (registro, entorno, `.exe`/`.bat`/`.cmd`/`.ps1` reales, descubrimiento, acoplado), `shortcuts::host_link` y el diálogo de descubrimiento en `mito-tui` | ✅ |
 | `test_host_data.py` | 10 | F8 | `mito-desktop::host_data` (10, con junctions reales y raíces del host inyectadas) | ✅ |
 | `test_host_data_ui.py` | 2 | F8 | `mito-tui::app::tests_f8` (los 2: oferta de `data` y `cache` por separado y enlace manual con cancelar, reemplazar y desenlazar) | ✅ |
 | `test_host_exposure.py` | 6 | F8 | `mito-desktop::host_exposure` (6, más aparte, plan, retirada y formato del registro) | ✅ |
@@ -120,7 +120,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_msi.py` | 5 | F7 | `mito-transfer::archives::msi` (5, con MSI y CAB reales) y `mito-engine/tests/extractors.rs` | ✅ |
 | `test_network.py` | 5 | F9 |  | ⬜ |
 | `test_network_setup.py` | 8 | F9 |  | ⬜ |
-| `test_open_with.py` | 9 | F8 |  | ⬜ |
+| `test_open_with.py` | 9 | F8 | `mito-desktop::open_with` (rama de prueba de HKCU) | ✅ |
 | `test_path_limit.py` | 4 | F5 | `mito-core::path_limit` (3); 1 compara PowerShell con Python ➖ | ✅ |
 | `test_persistence_locations.py` | 2 | F1 | `mito-core::persistence` (2) | ✅ |
 | `test_pocketool_authoring.py` | 25 | F10 |  | ⬜ |
@@ -128,7 +128,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_pocketools.py` | 4 | F10 |  | ⬜ |
 | `test_processes.py` | 1 | F4 | `mito::jobs` (3, con Job real) | ✅ |
 | `test_profile_transfer.py` | 16 | F11 |  | ⬜ |
-| `test_protocols.py` | 12 | F8 |  | ⬜ |
+| `test_protocols.py` | 12 | F8 | `mito-desktop::protocols` (rama de prueba de HKCU), con la corrección del respaldo del ADR 0013 | ✅ |
 | `test_publish.py` | 9 | F11 |  | ⬜ |
 | `test_release.py` | 2 | F11 |  | ⬜ |
 | `test_relocation.py` | 5 | F11 |  | ⬜ |
@@ -174,7 +174,7 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` y `--owned` en F8) | ✅ |
 | `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ✅ |
 | `mito shortcut --profile [--badge] [--color]` | F8 | ✅ |
-| `mito host-run --profile …` | F8 | ⬜ |
+| `mito host-run --profile …` | F8 | ✅ |
 | `mito pocketool-run --profile --package --entry` | F10 | ⬜ |
 | `mito mcp-server --pipe --owner --session` (oculto) | F12 | ⬜ |
 | `mito release [mayor\|minor\|hotfix] [--local] [--output]` | F11 | ⬜ |
@@ -251,4 +251,6 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Hooks** (ADR 0012): `Invoke-MitoExpand` llama a `mito.exe hook-expand <kind>` (oculto en la ayuda) en lugar de `python -m mito.hooks`; el contexto lleva `mito` en vez de `python`. El resto del preámbulo es idéntico. Los errores de `Expand-InnoArchive`, `Expand-DarkArchive` y `Expand-MsiArchive` tienen su propia clave (el original reemplazaba el nombre tras traducir). PowerShell se lanza por su ruta de System32.
 - **MSI**: todos los CAB se extraen y validan antes de copiar nada al destino (el original copiaba CAB a CAB). Una celda numérica inválida es `MSI: invalid number {x}` en lugar de un `ValueError`.
 - **Mensajes `MSI: …`, `Burn: …` e `Inno: …`** se conservan sin traducir, como el original; `MSI: CAB {p1}/{p2}`, `Archivos MSI: {p1}/{p2}` y `Herramienta incompleta: {p1}` sí son claves.
+- **Integración con Windows** (ADR 0013): los `.lnk`, «Abrir con» y protocolos lanzan `corein\mitow.exe` (sin consola) en lugar de `pythonw.exe -m mito`; los `.lnk` se escriben con `IShellLinkW` en lugar de PowerShell; las insignias usan la misma fuente que Pillow (Aileron) rasterizada con `ab_glyph`, con diferencias de antialias de 1-2 px. Reclamar un protocolo ya reclamado conserva el respaldo del dueño original del host (el original lo perdía).
+- **Búsquedas en el host**: el descubrimiento de accesos y la búsqueda de carpetas de `AppData` no siguen junctions ni enlaces, como `rglob`/`os.walk(followlinks=False)`.
 
