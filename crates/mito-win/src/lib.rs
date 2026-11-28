@@ -3,9 +3,11 @@
 pub mod clipboard;
 pub mod console;
 pub mod files;
+pub mod jobs;
 pub mod links;
 pub mod msi;
 pub mod registry;
 pub mod resources;
+pub mod shell;
 pub mod system;
 pub mod taskbar;
