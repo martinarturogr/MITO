@@ -369,20 +369,32 @@ pub fn command(root: &Path, profile: &str, app: &str, shortcut: Option<&str>) ->
 
 /// Icono del `ProgID` y de los protocolos de un componente.
 ///
-/// Por ahora es el propio `mitow.exe` (icono 0). PUNTO DE ENGANCHE: cuando exista el
-/// icono con insignia de `shortcuts::application_icon` (nombre `open-<tag>-<hash8>`, ver
-/// `docs/spec/modules/open_with.md`), se devuelve aquí; ningún otro código decide el icono.
+/// Es el icono con insignia de [`crate::shortcuts::application_icon`] sobre el icono del
+/// componente, con nombre `open-<tag>-<hash8>` (`icon_for` del original).
 ///
 /// # Errors
 ///
-/// Los de generar el icono (hoy ninguno).
+/// Los de resolver el acceso del componente y generar el icono.
 pub fn icon_for(
     engine: &Engine,
-    _installation: &Record,
-    _profile: &str,
-    _shortcut: Option<&str>,
+    installation: &Record,
+    profile: &str,
+    shortcut: Option<&str>,
 ) -> Result<PathBuf> {
-    Ok(launcher(engine.root()))
+    let badge = crate::shortcuts::badge_text(engine, None)?;
+    let color = crate::shortcuts::badge_color(engine, None)?;
+    let tag = progid(profile, &installation.key, shortcut);
+    let tag = tag.strip_prefix("MITO.").unwrap_or(&tag);
+    let mut hasher = Sha256::new();
+    hasher.update(format!("{badge}{color}").as_bytes());
+    let digest = hasher.finalize();
+    let suffix: String = digest.iter().take(4).fold(String::new(), |mut out, b| {
+        let _ = write!(out, "{b:02x}");
+        out
+    });
+    let name = format!("open-{tag}-{suffix}");
+    let source = crate::shortcuts::component_icon_source(engine, installation, profile, shortcut)?;
+    crate::shortcuts::application_icon(engine, &name, &badge, Some(&source), &color)
 }
 
 fn set(key: &Key, path: &str, name: &str, value: &str) -> Result<()> {
@@ -865,6 +877,14 @@ pub(crate) mod testing {
         fs::create_dir_all(root).unwrap();
         let engine = Engine::new(root);
         engine.initialize().unwrap();
+        // Icono de MITO: base de las insignias cuando el ejecutable no tiene icono.
+        let branding = engine.layout().branding_icon();
+        fs::create_dir_all(branding.parent().unwrap()).unwrap();
+        fs::write(
+            &branding,
+            include_bytes!("../../../assets/branding/mito.ico"),
+        )
+        .unwrap();
         let folder = engine.root().join("core").join("apps").join(key);
         fs::create_dir_all(&folder).unwrap();
         fs::write(folder.join(executable), b"MZ").unwrap();

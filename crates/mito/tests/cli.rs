@@ -252,25 +252,6 @@ fn los_comandos_de_otras_fases_se_analizan_pero_no_estan_disponibles() {
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local", "--output", "out"], "release"),
         (
-            vec!["shortcut", "--profile", "p", "--badge", "DEV"],
-            "shortcut",
-        ),
-        (
-            vec![
-                "app-shortcut",
-                "extras/tool",
-                "--profile",
-                "one",
-                "--badge",
-                "DEV",
-                "--coupled",
-                "--",
-                "--name",
-                "two words",
-            ],
-            "app-shortcut",
-        ),
-        (
             vec![
                 "pocketool-run",
                 "--profile",
@@ -673,12 +654,50 @@ fn run_de_un_bin_devuelve_la_salida_y_el_codigo_del_comando() {
 }
 
 #[test]
-fn run_con_owned_o_coupled_no_esta_soportado_todavia() {
+fn run_con_owned_espera_al_proceso_pausa_y_devuelve_su_codigo() {
     let instance = Instance::new();
     instance.ok(&["profile", "create", "dev"]);
     import(
         &instance,
-        &bucket_with_tool(&instance, "@echo off\r\n", true),
+        &bucket_with_tool(
+            &instance,
+            "@echo off
+echo hola %~1
+exit /b 3
+",
+            true,
+        ),
+    );
+    instance.ok(&["install", "main/tool", "--profile", "dev"]);
+    instance
+        .mito()
+        .args(["run", "--profile", "dev", "--app", "tool", "--owned"])
+        .args(["--", "uno"])
+        .write_stdin(
+            "
+",
+        )
+        .assert()
+        .code(3)
+        .stdout(contains("hola uno"))
+        .stdout(contains(
+            "La aplicación terminó con el código 3.
+Pulsa Intro para cerrar esta pestaña.",
+        ));
+}
+
+#[test]
+fn run_con_coupled_sin_windows_terminal_explica_que_falta() {
+    let instance = Instance::new();
+    instance.ok(&["profile", "create", "dev"]);
+    import(
+        &instance,
+        &bucket_with_tool(
+            &instance,
+            "@echo off
+",
+            true,
+        ),
     );
     instance.ok(&["install", "main/tool", "--profile", "dev"]);
     instance
@@ -686,16 +705,45 @@ fn run_con_owned_o_coupled_no_esta_soportado_todavia() {
         .args(["run", "--profile", "dev", "--app", "tool", "--coupled"])
         .assert()
         .code(1)
-        .stderr("MITO: Modo de lanzamiento no soportado todavía: --coupled\n");
-    // `--owned` pausa aunque falle, y deja constancia del código.
-    instance
-        .mito()
-        .args(["run", "--profile", "dev", "--app", "tool", "--owned"])
-        .write_stdin("\n")
+        .stderr(
+            "MITO: Falta Windows Terminal portable. Ejecuta mito.cmd bootstrap.
+",
+        );
+}
+
+/// `mitow.exe`: el mismo MITO sin consola. No escribe en stdout ni en stderr y deja sus
+/// errores en `logs/mito.log`; el código de salida es el mismo.
+#[test]
+fn mitow_registra_los_errores_en_el_log_y_no_escribe_en_la_consola() {
+    let instance = Instance::new();
+    instance.ok(&["profile", "create", "dev"]);
+    let mut mitow = Command::cargo_bin("mitow").unwrap();
+    mitow
+        .env("MITO_ROOT_PATH_LIMIT", "1000")
+        .arg("--root")
+        .arg(instance.root())
+        .args(["run", "--profile", "dev", "--app", "main/tool"])
         .assert()
         .code(1)
-        .stdout("La aplicación terminó con el código 1.\nPulsa Intro para cerrar esta pestaña.")
-        .stderr("MITO: Modo de lanzamiento no soportado todavía: --owned\n");
+        .stdout("")
+        .stderr("");
+    let log = fs::read_to_string(instance.root().join("logs").join("mito.log")).unwrap();
+    // El log escapa los caracteres no ASCII (`á`).
+    assert!(
+        log.contains(r#""operation": "mitow", "message": "MITO: main/tool no est"#),
+        "{log}"
+    );
+    // Los argumentos incorrectos también van al log y salen con 2.
+    Command::cargo_bin("mitow")
+        .unwrap()
+        .arg("--root")
+        .arg(instance.root())
+        .args(["run", "--profile", "dev"])
+        .assert()
+        .code(2)
+        .stderr("");
+    let log = fs::read_to_string(instance.root().join("logs").join("mito.log")).unwrap();
+    assert!(log.contains("--app"), "{log}");
 }
 
 #[test]

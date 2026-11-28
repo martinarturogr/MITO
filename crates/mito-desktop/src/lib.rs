@@ -1,6 +1,7 @@
 //! Integración de MITO con el escritorio de Windows (ADR 0013).
 #![forbid(unsafe_code)]
 
+pub mod host;
 pub mod host_apps;
 pub mod host_data;
 pub mod host_exposure;

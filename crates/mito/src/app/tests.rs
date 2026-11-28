@@ -302,11 +302,6 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
     for (args, name) in [
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local"], "release"),
-        (vec!["shortcut", "--profile", "one"], "shortcut"),
-        (
-            vec!["app-shortcut", "extras/tool", "--profile", "one"],
-            "app-shortcut",
-        ),
         (
             vec![
                 "pocketool-run",
@@ -347,6 +342,88 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
             format!("MITO: Comando no disponible todavía: {name}\n")
         );
         assert_eq!(result.out, "");
+    }
+}
+
+/// `app-shortcut` y `shortcut` escriben en el escritorio real, así que aquí solo se
+/// prueban los fallos que ocurren antes de tocarlo.
+#[test]
+fn los_comandos_de_acceso_validan_antes_de_tocar_el_escritorio() {
+    let rig = rig(0, false);
+    for (args, message) in [
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--badge",
+                "ABCDE",
+            ],
+            "MITO: La etiqueta admite de 1 a 4 letras o números\n",
+        ),
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--color",
+                "fucsia",
+            ],
+            "MITO: Elige un color de la paleta del icono\n",
+        ),
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--shortcut",
+                "Otra",
+            ],
+            "MITO: Shortcut unavailable or ambiguous: Otra\n",
+        ),
+        (
+            vec!["app-shortcut", "extras/otra", "--profile", "one"],
+            "MITO: El componente debe estar activo en el profile\n",
+        ),
+        (
+            vec!["shortcut", "--profile", "one", "--color", "fucsia"],
+            "MITO: Elige un color de la paleta del icono\n",
+        ),
+        (
+            vec!["shortcut", "--profile", "one", "--badge", "A B"],
+            "MITO: La etiqueta admite de 1 a 4 letras o números\n",
+        ),
+    ] {
+        let result = cli(&rig, &args, "");
+        assert_eq!(result.code, 1, "{args:?}");
+        assert_eq!(result.err, message, "{args:?}");
+        assert_eq!(result.out, "");
+    }
+    assert!(
+        !rig.engine
+            .layout()
+            .state()
+            .join("application-shortcuts")
+            .exists()
+    );
+}
+
+#[test]
+fn los_comandos_de_acceso_se_ejecutan_dentro_del_lock_de_mutacion() {
+    let rig = rig(0, false);
+    let _held =
+        mito_core::MutationLock::mutation(rig.engine.layout(), std::time::Duration::ZERO).unwrap();
+    for args in [
+        vec!["app-shortcut", "extras/tool", "--profile", "one"],
+        vec!["shortcut", "--profile", "one"],
+    ] {
+        let result = cli(&rig, &args, "");
+        assert_eq!(result.code, 1, "{args:?}");
+        assert!(result.err.starts_with("MITO: "), "{}", result.err);
+        assert!(!result.err.contains("escritorio"), "{}", result.err);
     }
 }
 

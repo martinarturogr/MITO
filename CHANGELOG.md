@@ -59,3 +59,10 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   independiente, `--owned` en un Job y `--coupled`), los enlaces de datos y caché del host
   hacia `home/AppData` y la exposición inversa con apartado y restauración, los selectores
   nativos de archivo y carpeta con `localize_script`, y el comando `host-run`.
+- F8 (accesos): `mito-desktop` con los accesos de escritorio de aplicaciones, del host y
+  de la terminal de MITO (`.lnk` nativos con `IShellLinkW`, registros en `core/state`,
+  colisión numerada y reescritura al publicar una versión) e iconos con insignia
+  (algoritmo, colores y caché del original, con Aileron embebida). `mito` pasa a
+  biblioteca con dos binarios, `mito.exe` y `mitow.exe` (sin consola, errores en
+  `logs/mito.log`), `run --owned` con Job Object real, `run --coupled`, `app-shortcut` y
+  `shortcut` (ADR 0013).

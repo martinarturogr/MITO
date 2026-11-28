@@ -37,7 +37,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-desktop (`host_data`) | F8 | ✅ |
 | `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-desktop (`host_exposure`) | F8 | ✅ |
 | `i18n.py` | 109 | Traducción de mensajes MITO; catálogos y salida externa no se traducen | mito-i18n | F1 | ✅ |
-| `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-win | F8 | ⬜ |
+| `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-desktop (`icons`; Aileron embebida con `ab_glyph`, ADR 0013) | F8 | ✅ |
 | `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-transfer (`archives::inno`) | F7 | ✅ |
 | `isolation.py` | 61 | Aislamiento de profile según campos declarativos del manifiesto | mito-engine (`isolation`) | F4 | ✅ |
 | `jobs.py` | 295 | Jobs acotados de comandos y operaciones por sesión MCP | mito-mcp | F12 | ⬜ |
@@ -61,7 +61,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `pocketool_git.py` | 199 | Operaciones Git explícitas en el repositorio de Pocketools | mito-engine | F10 | ⬜ |
 | `pocketools.py` | 194 | Paquetes de scripts compartidos: snapshots validados, sin hooks | mito-engine | F10 | ⬜ |
 | `pocketools_ui.py` | 113 | Diálogo Textual de Pocketools | mito-tui | F10 | ⬜ |
-| `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-engine (`launch`, flags de creación); Job Objects en F8 | F4 / F8 | 🟨 |
+| `processes.py` | 147 | Tiempo de vida de procesos Windows; los comandos no heredan handles | mito-engine (`launch`, flags de creación); `mito-win::jobs` y `mito::jobs` (`--owned`, `--coupled`) en F8; `ProcessHandle` y pipes en F12 | F4 / F8 / F12 | 🟨 |
 | `profile_files.py` | 399 | Archivos de configuración elegidos a mano en la tabla files del profile | mito-engine | F11 | ⬜ |
 | `profile_files_ui.py` | 188 | Diálogo Textual para elegir archivos de configuración del profile | mito-tui | F11 | ⬜ |
 | `profile_management_ui.py` | 82 | Diálogos Textual para crear y borrar profiles | mito-tui (`dialogs::manage_profile`, `dialogs::delete_profile`) | F6 (exportar, importar, acceso directo y archivos: F8/F11) | 🟨 |
@@ -75,7 +75,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `search.py` | 40 | Ordena coincidencias del catálogo: identificador primero, luego descripción | mito-catalog (`search`) | F3 | ✅ |
 | `self_update.py` | 508 | Actualizaciones explícitas de release, aplicadas por runtime desechable | mito-engine | F11 | ⬜ |
 | `self_update_ui.py` | 49 | Revisión humana antes de descargar una release de MITO | mito-tui | F11 | ⬜ |
-| `shortcuts.py` | 233 | Accesos directos de aplicaciones en el escritorio de Windows | mito-win | F8 | ⬜ |
+| `shortcuts.py` | 233 | Accesos directos de aplicaciones en el escritorio de Windows | mito-desktop (`shortcuts`; `.lnk` con `IShellLinkW`, destino `mitow.exe`, ADR 0013) | F8 | ✅ |
 | `startup.py` | 28 | Guardia de arranque sólo stdlib: diagnostica fallos de importación | mito (inicio de `diagnostics` y panic hook) | F4 | ✅ |
 | `storage.py` | 114 | Rutas y JSON seguros, YitoError, identificadores y bloqueo de mutaciones | mito-core (`storage`, `lock`, `error`) | F1 | ✅ |
 | `storage_migration.py` | 76 | Conversión única de directorios de versión a rutas estables | mito-core | F11 | ⬜ |
@@ -126,7 +126,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_pocketool_authoring.py` | 25 | F10 |  | ⬜ |
 | `test_pocketool_ui.py` | 7 | F10 |  | ⬜ |
 | `test_pocketools.py` | 4 | F10 |  | ⬜ |
-| `test_processes.py` | 1 | F4 |  | ⬜ |
+| `test_processes.py` | 1 | F4 | `mito::jobs` (3, con Job real) | ✅ |
 | `test_profile_transfer.py` | 16 | F11 |  | ⬜ |
 | `test_protocols.py` | 12 | F8 |  | ⬜ |
 | `test_publish.py` | 9 | F11 |  | ⬜ |
@@ -134,7 +134,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_relocation.py` | 5 | F11 |  | ⬜ |
 | `test_search.py` | 4 | F3 | `mito-catalog::search` (4) | ✅ |
 | `test_self_update.py` | 28 | F11 |  | ⬜ |
-| `test_shortcuts.py` | 16 | F8 |  | ⬜ |
+| `test_shortcuts.py` | 16 | F8 | `mito-desktop` (`shortcuts`, 21; `icons`, 16) | ✅ |
 | `test_stable_storage.py` | 7 | F4 | `mito-engine` (4); 3 de migración en F11 | 🟨 |
 | `test_terminal.py` | 10 | F5 | `mito-terminal` (10, golden de `settings.json` con insta) | ✅ |
 | `test_terminal_identity.py` | 4 | F5 | `mito-terminal::identity` (3); 1 simula la vtable de `IPropertyStore` ➖ | ✅ |
@@ -171,9 +171,9 @@ Fuente: subparsers de `core/app/mito/__main__.py`. Incluye el comando oculto `mc
 | `mito deactivate <installation> --profile` | F4 | ✅ |
 | `mito shell --profile [--type cmd\|powershell]` | F4 | ✅ |
 | `mito terminal --profile [--type] [--new]` | F5 | ✅ |
-| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` en F8) | ✅ |
-| `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ⬜ |
-| `mito shortcut --profile [--badge] [--color]` | F8 | ⬜ |
+| `mito run --profile --app [--bin] [--shortcut] [--coupled]` | F4 (`--coupled` y `--owned` en F8) | ✅ |
+| `mito app-shortcut <installation> --profile [--badge] [--color] [--shortcut] [--coupled]` | F8 | ✅ |
+| `mito shortcut --profile [--badge] [--color]` | F8 | ✅ |
 | `mito host-run --profile …` | F8 | ⬜ |
 | `mito pocketool-run --profile --package --entry` | F10 | ⬜ |
 | `mito mcp-server --pipe --owner --session` (oculto) | F12 | ⬜ |
