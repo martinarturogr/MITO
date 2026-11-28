@@ -13,6 +13,7 @@ mod console;
 mod doctor;
 mod host_run;
 mod jobs;
+mod network;
 mod shortcuts;
 mod windowed;
 
