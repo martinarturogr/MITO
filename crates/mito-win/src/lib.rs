@@ -6,6 +6,7 @@ pub mod files;
 pub mod jobs;
 pub mod links;
 pub mod msi;
+pub mod network;
 pub mod registry;
 pub mod resources;
 pub mod shell;

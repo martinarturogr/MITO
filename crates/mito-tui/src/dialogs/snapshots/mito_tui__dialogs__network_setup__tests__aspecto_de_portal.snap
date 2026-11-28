@@ -1,0 +1,23 @@
+---
+source: crates/mito-tui/src/dialogs/network_setup.rs
+expression: "harness.draw(&mut dialog, 100, 24)"
+---
+
+
+
+
+          ╭──────────────────────────────────────────────────────────────────────────────╮
+          │ CONFIGURACIÓN DE RED                                                         │
+          │ Proxy: http://proxy.example:8080 (script PAC)                                │
+          │ La red redirige a un portal de autenticación.                                │
+          │ Se guardarán estas claves en config.properties:                              │
+          │                                                                              │
+          │ https_proxy=http://proxy.example:8080                                        │
+          │ enable_proxy_authentication=true                                             │
+          │ proxy_authentication_url=http://portal.test/login                            │
+          │                                                                              │
+          │ Tu usuario y contraseña nunca se guardan: MITO los pedirá en cada sesión que │
+          │ el portal lo requiera.                                                       │
+          │                                                                              │
+          │         [ Guardar y conectar ]                     [ Cancelar ]              │
+          ╰──────────────────────────────────────────────────────────────────────────────╯

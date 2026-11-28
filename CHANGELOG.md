@@ -74,3 +74,12 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   selector «Proceso» de «Abrir» (`attached` lanza acoplado). El escritorio, el `AppData`
   del host, el registro y los selectores se inyectan (`Integration`) para probar sin tocar
   el sistema.
+- F9: red con paridad del original. `mito-transfer::network` (proxies con la semántica de
+  `urllib`, sesión sin redirecciones y con cookies, sondas, formulario del portal, proxy
+  del sistema con PAC/WPAD) y `mito-engine::network` (configuración, comprobación de
+  Internet, login de portal, diagnóstico con propuesta de claves, `apply` e `intercept`);
+  las descargas aplican los proxies de `config.properties` en cada intento. La interfaz
+  muestra el botón INTERNET con sondeo silencioso y los diálogos de configuración de red y
+  de credenciales; `run` y `host-run` piden las credenciales del portal con un diálogo
+  nativo; el bootstrap detecta el proxy, ofrece guardarlo y permite entrar en el portal
+  desde la consola. Las credenciales nunca se guardan ni se registran.

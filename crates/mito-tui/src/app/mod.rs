@@ -21,6 +21,7 @@ mod catalog;
 mod dialogs;
 mod home;
 mod host;
+mod network;
 mod render;
 mod reports;
 mod sidebar;
@@ -32,6 +33,8 @@ mod testing;
 mod tests;
 #[cfg(test)]
 mod tests_f8;
+#[cfg(test)]
+mod tests_f9;
 mod update;
 
 pub use state::App;

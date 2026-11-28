@@ -135,7 +135,7 @@ impl Rig {
 
     /// Espera a que termine la operación en curso.
     pub fn settle(&mut self) {
-        self.pump_until(|app| !app.busy.active && app.startup.is_none());
+        self.pump_until(|app| !app.busy.active && app.startup.is_none() && !app.net.running);
     }
 
     pub fn input(&mut self, input: &Input) {

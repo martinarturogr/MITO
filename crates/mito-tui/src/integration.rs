@@ -9,11 +9,13 @@
 
 use std::path::{Path, PathBuf};
 
+use mito_core::Layout;
 use mito_desktop::host_apps;
 use mito_desktop::host_data::HostRoots;
 use mito_desktop::native::NativeError;
 use mito_desktop::open_with::Classes;
 use mito_desktop::shortcuts::desktop_path;
+use mito_engine::network::{Connectivity, Credentials, Diagnosis, Network, diagnose};
 use mito_engine::{Engine, Error, Result};
 
 /// Función que da una carpeta del sistema.
@@ -28,6 +30,52 @@ type ChooseFile = Box<dyn Fn(Translate<'_>) -> Result<Option<PathBuf>> + Send + 
 type ChooseFolder = Box<dyn Fn(&Path, Translate<'_>) -> Result<Option<PathBuf>> + Send + Sync>;
 /// Lanza una aplicación del host: motor, profile, identidad, argumentos y si va acoplada.
 type LaunchHost = Box<dyn Fn(&Engine, &str, &str, &[String], bool) -> Result<i32> + Send + Sync>;
+
+/// Comprueba Internet: `(¿hay Internet?, ¿hay red local?)`. Con `true` registra el fallo de
+/// red como `network.check`.
+type CheckNetwork = Box<dyn Fn(&Layout, bool) -> Result<(bool, bool)> + Send + Sync>;
+/// Diagnostica la ruta de red (no guarda nada).
+type DiagnoseNetwork = Box<dyn Fn(&Layout) -> Result<Diagnosis> + Send + Sync>;
+/// Entra en el portal con las credenciales; `Ok(false)` si no lo acepta.
+type Authenticate = Box<dyn Fn(&Layout, &Credentials) -> Result<bool> + Send + Sync>;
+
+/// Operaciones de red que la interfaz inyecta (`Network.check`, `diagnose` y
+/// `Network.authenticate` del original, que sus pruebas sustituyen con `patch`).
+/// `apply` no está aquí: la interfaz guarda siempre con el real.
+pub struct NetworkPort {
+    /// Comprobación de Internet y de la red local.
+    pub check: CheckNetwork,
+    /// Diagnóstico de la ruta.
+    pub diagnose: DiagnoseNetwork,
+    /// Autenticación en el portal cautivo.
+    pub authenticate: Authenticate,
+}
+
+impl NetworkPort {
+    /// Las operaciones reales: sondas HTTP, PowerShell para el proxy de Windows y el
+    /// portal de `config.properties`.
+    pub fn system() -> Self {
+        Self {
+            check: Box::new(|layout, log| {
+                let network = Network::open(layout, None)?;
+                let online = network.check(log);
+                let local = online || network.local_network();
+                Ok((online, local))
+            }),
+            diagnose: Box::new(|layout| {
+                let network = Network::open(layout, None)?;
+                Ok(diagnose(
+                    &network,
+                    &network,
+                    &mito_transfer::network::system_proxy,
+                ))
+            }),
+            authenticate: Box::new(|layout, credentials| {
+                Network::open(layout, None)?.authenticate(credentials)
+            }),
+        }
+    }
+}
 
 /// Lo que la interfaz usa del sistema Windows.
 pub struct Integration {
@@ -45,6 +93,8 @@ pub struct Integration {
     pub choose_folder: ChooseFolder,
     /// Lanzamiento de una aplicación del host.
     pub launch_host: LaunchHost,
+    /// Comprobación, diagnóstico y autenticación de red (botón INTERNET).
+    pub network: NetworkPort,
 }
 
 impl std::fmt::Debug for Integration {
@@ -75,6 +125,7 @@ impl Integration {
             launch_host: Box::new(|engine, profile, identity, arguments, coupled| {
                 host_apps::launch(engine, profile, identity, arguments, coupled, false)
             }),
+            network: NetworkPort::system(),
         }
     }
 }
@@ -91,7 +142,7 @@ pub(crate) mod testing {
     //! Integración falsa para las pruebas: nada toca el sistema real.
 
     use std::collections::VecDeque;
-    use std::sync::atomic::{AtomicU32, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
     use std::sync::{Arc, Mutex};
 
     use mito_win::registry::{Hive, Key};
@@ -154,9 +205,96 @@ pub(crate) mod testing {
         }
     }
 
+    /// Lo que la red falsa responde y lo que se le pidió.
+    pub struct NetworkScript {
+        /// Respuesta de `check`: `(Internet, red local)`.
+        pub check: (bool, bool),
+        /// Si no es `None`, `check` falla con este mensaje.
+        pub check_error: Option<String>,
+        /// Respuesta de `diagnose`; `Err` con el mensaje si es `Err`.
+        pub diagnosis: std::result::Result<Diagnosis, String>,
+        /// Respuesta de `authenticate`.
+        pub auth: std::result::Result<bool, String>,
+        /// Valor de `log` de cada `check` recibido.
+        pub checks: Vec<bool>,
+        /// Número de `diagnose` recibidos.
+        pub diagnoses: u32,
+        /// `(usuario, contraseña)` de cada `authenticate` recibido.
+        pub auths: Vec<(String, String)>,
+    }
+
+    impl Default for NetworkScript {
+        fn default() -> Self {
+            Self {
+                check: (true, true),
+                check_error: None,
+                diagnosis: Err("sin diagnóstico preparado".into()),
+                auth: Ok(true),
+                checks: Vec::new(),
+                diagnoses: 0,
+                auths: Vec::new(),
+            }
+        }
+    }
+
+    /// Red falsa: el guion y una compuerta que retiene los `check` mientras esté cerrada.
+    #[derive(Clone, Default)]
+    pub struct FakeNetwork {
+        pub script: Arc<Mutex<NetworkScript>>,
+        /// Mientras sea `true`, `check` espera.
+        pub hold: Arc<AtomicBool>,
+    }
+
+    impl FakeNetwork {
+        /// Retiene (o libera) los `check` siguientes.
+        pub fn hold(&self, held: bool) {
+            self.hold.store(held, Ordering::SeqCst);
+        }
+
+        /// Cuántos `check` se pidieron.
+        pub fn checks(&self) -> usize {
+            self.script.lock().unwrap().checks.len()
+        }
+
+        fn port(&self) -> NetworkPort {
+            let check = Arc::clone(&self.script);
+            let hold = Arc::clone(&self.hold);
+            let diagnose = Arc::clone(&self.script);
+            let authenticate = Arc::clone(&self.script);
+            NetworkPort {
+                check: Box::new(move |_, log| {
+                    check.lock().unwrap().checks.push(log);
+                    while hold.load(Ordering::SeqCst) {
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    let script = check.lock().unwrap();
+                    match &script.check_error {
+                        Some(text) => Err(Error::untranslated(text)),
+                        None => Ok(script.check),
+                    }
+                }),
+                diagnose: Box::new(move |_| {
+                    let mut script = diagnose.lock().unwrap();
+                    script.diagnoses += 1;
+                    script.diagnosis.clone().map_err(Error::untranslated)
+                }),
+                authenticate: Box::new(move |_, credentials| {
+                    let mut script = authenticate.lock().unwrap();
+                    script.auths.push((
+                        credentials.username.clone(),
+                        credentials.password.to_string(),
+                    ));
+                    script.auth.clone().map_err(Error::untranslated)
+                }),
+            }
+        }
+    }
+
     /// Lo que las pruebas pueden preparar y comprobar de la integración falsa.
     #[derive(Clone, Default)]
     pub struct Fakes {
+        /// Comprobación, diagnóstico y autenticación de red.
+        pub network: FakeNetwork,
         /// Aplicaciones que «encuentra» la búsqueda del host.
         pub found: Arc<Mutex<Vec<(String, PathBuf)>>>,
         /// Respuestas del selector de archivo (vacío o `None` = cancelado).
@@ -197,6 +335,7 @@ pub(crate) mod testing {
                 ));
                 Ok(0)
             }),
+            network: fakes.network.port(),
         }
     }
 }

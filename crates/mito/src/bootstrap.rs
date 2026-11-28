@@ -7,13 +7,16 @@
 
 mod install;
 pub mod lock;
+pub mod proxy;
 
 use std::time::Duration;
 
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::storage::write_json;
 use mito_core::{Layout, MutationLock, Operation};
-use mito_engine::Downloader;
+use mito_engine::{Downloader, HttpDownloader};
+use mito_transfer::DownloadOptions;
+use mito_transfer::network::Proxies;
 use serde_json::json;
 
 use crate::console::{Color, Console};
@@ -141,17 +144,78 @@ fn preview(layout: &Layout, console: &Console) -> i32 {
     0
 }
 
-/// Prepara las herramientas que falten y devuelve el código de salida: `0` listo, `1`
-/// error y `2` cancelado en la bienvenida.
-///
-/// Con todo listo no descarga nada, pero repasa la marca de Windows Terminal y reescribe
-/// `core/state/bootstrap-tools.json`, como `mito bootstrap` del original.
+/// Cómo se descargan las herramientas.
+pub enum Downloads<'a> {
+    /// Un descargador ya construido, sin fase de proxy (pruebas).
+    Fixed(&'a dyn Downloader),
+    /// Antes de descargar se resuelve el proxy (`Initialize-YitoProxy`) y `make` construye
+    /// el descargador con los proxies resultantes (`None` si no hizo falta descargar).
+    Proxied {
+        /// Fábrica del descargador a partir de los proxies.
+        make: &'a dyn Fn(Option<Proxies>) -> Box<dyn Downloader>,
+        /// Entorno, proxy de Windows y sondas.
+        services: &'a proxy::Services<'a>,
+    },
+}
+
+/// [`run_with`] con el proxy y las descargas reales: el descargador usa los proxies que
+/// resuelve la fase de proxy.
+pub fn run_production(
+    layout: &Layout,
+    options: Options,
+    console: &Console,
+    operation: &Operation,
+) -> i32 {
+    let services = proxy::Services::real();
+    let make = |proxies: Option<Proxies>| -> Box<dyn Downloader> {
+        Box::new(HttpDownloader::new(DownloadOptions {
+            proxies,
+            ..DownloadOptions::default()
+        }))
+    };
+    run_with(
+        layout,
+        options,
+        console,
+        operation,
+        &Downloads::Proxied {
+            make: &make,
+            services: &services,
+        },
+    )
+}
+
+/// Prepara las herramientas que falten con un descargador fijo (sin fase de proxy) y
+/// devuelve el código de salida. Ver [`run_with`].
 pub fn run(
     layout: &Layout,
     options: Options,
     console: &Console,
     operation: &Operation,
     downloader: &dyn Downloader,
+) -> i32 {
+    run_with(
+        layout,
+        options,
+        console,
+        operation,
+        &Downloads::Fixed(downloader),
+    )
+}
+
+/// Prepara las herramientas que falten y devuelve el código de salida: `0` listo, `1`
+/// error y `2` cancelado en la bienvenida.
+///
+/// Con todo listo no descarga nada, pero repasa la marca de Windows Terminal y reescribe
+/// `core/state/bootstrap-tools.json`, como `mito bootstrap` del original. Si falta alguna
+/// herramienta y `downloads` es [`Downloads::Proxied`], tras la bienvenida decide el
+/// proxy (con `--approved` sin preguntar nada).
+pub fn run_with(
+    layout: &Layout,
+    options: Options,
+    console: &Console,
+    operation: &Operation,
+    downloads: &Downloads<'_>,
 ) -> i32 {
     if options.preview_welcome {
         return preview(layout, console);
@@ -162,6 +226,7 @@ pub fn run(
         Err(error) => return fail(layout, console, "read-bootstrap-lock", &error),
     };
     let missing = pending(layout, &lock);
+    let mut proxies = None;
     if !missing.is_empty() {
         if !options.approved && !show_welcome(console, &missing) {
             log(
@@ -175,7 +240,27 @@ pub fn run(
             return CANCELLED;
         }
         log(layout, LogLevel::Info, "confirmation", "Bootstrap approved");
+        if let Downloads::Proxied { services, .. } = downloads {
+            // El proxy se decide antes de tomar el lock de mutación: guardar la
+            // configuración también lo toma.
+            let target = missing
+                .iter()
+                .find_map(|tool| tool.artifacts.first())
+                .map_or("", |artifact| artifact.url.as_str());
+            match proxy::initialize(layout, target, !options.approved, console, services) {
+                Ok(resolved) => proxies = Some(resolved),
+                Err(error) => return fail(layout, console, "proxy", &error),
+            }
+        }
     }
+    let built;
+    let downloader: &dyn Downloader = match downloads {
+        Downloads::Fixed(downloader) => *downloader,
+        Downloads::Proxied { make, .. } => {
+            built = make(proxies);
+            built.as_ref()
+        }
+    };
     match prepare(layout, &lock, console, operation, downloader) {
         Ok(()) => {
             log(layout, LogLevel::Info, "complete", "Bootstrap completed");

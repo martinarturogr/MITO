@@ -3,6 +3,8 @@
 use std::cell::RefCell;
 use std::io::{self, BufRead, IsTerminal as _, Write};
 
+use zeroize::Zeroizing;
+
 /// Colores de texto de la consola (los que usa la bienvenida del bootstrap).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -10,6 +12,10 @@ pub enum Color {
     Cyan,
     /// Amarillo (aviso).
     Yellow,
+    /// Verde (éxito).
+    Green,
+    /// Rojo (error).
+    Red,
 }
 
 impl Color {
@@ -17,6 +23,8 @@ impl Color {
         match self {
             Self::Cyan => "\x1b[36m",
             Self::Yellow => "\x1b[33m",
+            Self::Green => "\x1b[32m",
+            Self::Red => "\x1b[31m",
         }
     }
 }
@@ -28,6 +36,8 @@ pub struct Console {
     err: RefCell<Box<dyn Write>>,
     input: RefCell<Box<dyn BufRead>>,
     color: bool,
+    /// ¿Se oculta lo que se escribe al leer un secreto? Solo en la consola real.
+    hide_secrets: bool,
 }
 
 impl Console {
@@ -42,6 +52,7 @@ impl Console {
         console.color = std::env::var_os("NO_COLOR").is_none()
             && io::stdout().is_terminal()
             && mito_win::console::enable_virtual_terminal();
+        console.hide_secrets = true;
         console
     }
 
@@ -52,6 +63,7 @@ impl Console {
             err: RefCell::new(err),
             input: RefCell::new(input),
             color: false,
+            hide_secrets: false,
         }
     }
 
@@ -98,6 +110,38 @@ impl Console {
         match self.input.borrow_mut().read_line(&mut line) {
             Ok(0) | Err(_) => None,
             Ok(_) => Some(line),
+        }
+    }
+
+    /// `Read-Host -AsSecureString`: escribe `prompt` y lee una línea sin eco (en la
+    /// consola real). El texto se borra de memoria al soltarse. `None` en EOF o si la
+    /// lectura falla.
+    pub fn read_secret(&self, prompt: &str) -> Option<Zeroizing<String>> {
+        {
+            let mut out = self.out.borrow_mut();
+            let _ = write!(out, "{prompt}");
+            let _ = out.flush();
+        }
+        // El guardián restaura el eco al soltarse, también si la lectura falla.
+        let hidden = if self.hide_secrets {
+            mito_win::console::HiddenInput::new()
+        } else {
+            None
+        };
+        let mut line = Zeroizing::new(String::new());
+        let read = self.input.borrow_mut().read_line(&mut line);
+        let silent = hidden.is_some();
+        drop(hidden);
+        if silent {
+            // Sin eco no hay salto de línea visible: lo escribe la consola.
+            self.line("");
+        }
+        match read {
+            Ok(0) | Err(_) => None,
+            Ok(_) => {
+                let text = line.trim_end_matches(['\r', '\n']).to_owned();
+                Some(Zeroizing::new(text))
+            }
         }
     }
 
@@ -180,6 +224,16 @@ mod tests {
             );
             assert_eq!(out.text(), "¿Continuar? [s/N] ");
         }
+    }
+
+    #[test]
+    fn el_secreto_se_lee_sin_saltos_de_linea_y_el_eof_es_none() {
+        let (console, out, _) = console("clave con espacios \r\nresto\n");
+        let secret = console.read_secret("Contraseña: ").unwrap();
+        assert_eq!(secret.as_str(), "clave con espacios ");
+        assert_eq!(out.text(), "Contraseña: ");
+        assert!(console.read_secret("Contraseña: ").is_some());
+        assert!(console.read_secret("Contraseña: ").is_none());
     }
 
     #[test]

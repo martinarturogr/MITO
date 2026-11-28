@@ -83,6 +83,10 @@ pub(super) enum Purpose {
     Protocols,
     /// Elegir una aplicación del host: la respuesta vuelve por el canal.
     Pick(Sender<Pick>),
+    /// Confirmación de los cambios de red; lleva el diagnóstico.
+    NetworkSetup(mito_engine::network::Diagnosis),
+    /// Credenciales del portal.
+    Proxy,
     /// Progreso de la operación.
     Progress,
     /// Aviso de paso largo.
@@ -270,6 +274,10 @@ impl App {
                     color: choice.color,
                 });
             }
+            (Purpose::NetworkSetup(diagnosis), Outcome::Confirmed(accepted)) => {
+                self.network_saved(accepted, &diagnosis);
+            }
+            (Purpose::Proxy, _) => self.check_network(),
             (Purpose::Pick(answer), Outcome::HostApplication(pick)) => {
                 let _ = answer.send(pick);
             }
@@ -345,6 +353,7 @@ impl App {
             return;
         }
         self.refresh_terminal_default();
+        self.check_network();
         let changed = Translator::from_layout(self.engine.layout())
             .is_ok_and(|saved| saved.language() != self.tr.language());
         if changed {

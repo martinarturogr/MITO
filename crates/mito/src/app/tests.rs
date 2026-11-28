@@ -16,9 +16,11 @@ use mito_engine::{Downloader, Engine, Extensions, Jobs, LaunchCommand};
 use serde_json::json;
 use zip::write::SimpleFileOptions;
 
-use super::{OWNED_PAUSE, dispatch_with};
+use super::{OWNED_PAUSE, Seams, dispatch_with};
 use crate::cli::Cli;
 use crate::console::testing::console;
+
+fn no_intercept(_: &Engine, _: &str) {}
 
 const ZERO_HASH: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -156,7 +158,7 @@ fn cli(rig: &Rig, args: &[&str], stdin: &str) -> Outcome {
         &console,
         &Operation::silent(),
         &AtomicBool::new(false),
-        &|| true,
+        &Seams::new(&|| true, &no_intercept),
     );
     Outcome {
         code,
@@ -438,7 +440,7 @@ fn ctrl_c_sale_con_130() {
         &console,
         &Operation::silent(),
         &AtomicBool::new(true),
-        &|| true,
+        &Seams::new(&|| true, &no_intercept),
     );
     assert_eq!(code, 130);
     assert_eq!(err.text(), "Operación interrumpida\n");
@@ -475,7 +477,7 @@ fn run_long(engine: &Engine, args: &[&str], stdin: &str, long_paths: bool) -> Ou
         &console,
         &Operation::silent(),
         &AtomicBool::new(false),
-        &move || long_paths,
+        &Seams::new(&move || long_paths, &no_intercept),
     );
     Outcome {
         code,
@@ -594,4 +596,192 @@ fn host_run_con_un_profile_inexistente_falla() {
     let result = cli(&rig, &["host-run", &id, "--profile", "missing"], "");
     assert_eq!(result.code, 1);
     assert!(result.err.starts_with("MITO: "), "{}", result.err);
+}
+
+// --- intercept de red antes de lanzar (F9) ----------------------------------------------
+
+/// Conectividad falsa: sin Internet y con red local.
+struct Offline;
+
+impl mito_engine::network::Connectivity for Offline {
+    fn check(&self, _log: bool) -> bool {
+        false
+    }
+
+    fn local_network(&self) -> bool {
+        true
+    }
+}
+
+/// Como `cli`, con el `intercept` indicado.
+fn cli_intercept(rig: &Rig, args: &[&str], intercept: &dyn Fn(&Engine, &str)) -> Outcome {
+    let parsed = Cli::try_parse_from(std::iter::once("mito").chain(args.iter().copied())).unwrap();
+    let (console, out, err) = console("");
+    let code = dispatch_with(
+        &rig.engine,
+        &parsed.command.unwrap(),
+        &console,
+        &Operation::silent(),
+        &AtomicBool::new(false),
+        &Seams::new(&|| true, intercept),
+    );
+    Outcome {
+        code,
+        out: out.text(),
+        err: err.text(),
+    }
+}
+
+#[test]
+fn intercept_se_llama_en_run_sin_bin_y_en_host_run_pero_no_con_bin() {
+    let rig = rig(0, false);
+    let id = host_script(&rig);
+    let calls = Mutex::new(Vec::<String>::new());
+    let record = |_: &Engine, profile: &str| calls.lock().unwrap().push(profile.to_owned());
+    let run = ["run", "--profile", "one", "--app", "extras/tool"];
+    assert_eq!(cli_intercept(&rig, &run, &record).code, 0);
+    let bin = ["run", "--profile", "one", "--app", "tool", "--bin", "tool"];
+    assert_eq!(cli_intercept(&rig, &bin, &record).code, 0);
+    assert_eq!(calls.lock().unwrap().len(), 1);
+    let host = ["host-run", &id, "--profile", "one"];
+    assert_eq!(cli_intercept(&rig, &host, &record).code, 0);
+    assert_eq!(*calls.lock().unwrap(), ["one", "one"]);
+    // Otros comandos no lo llaman.
+    assert_eq!(cli_intercept(&rig, &["installed"], &record).code, 0);
+    assert_eq!(calls.lock().unwrap().len(), 2);
+}
+
+/// Escribe `config.properties` con el portal configurado hacia un puerto cerrado local.
+fn configure_portal(rig: &Rig, portal: &str, extra: &str) {
+    fs::write(
+        rig.engine.layout().config_file(),
+        format!(
+            "network.timeout_seconds=1\n\
+             network.check_url=http://127.0.0.1:1/check\n\
+             enable_proxy_authentication=true\n\
+             proxy_authentication_url={portal}\n{extra}"
+        ),
+    )
+    .unwrap();
+}
+
+/// Portal que no responde.
+const CLOSED: &str = "http://127.0.0.1:1/login";
+
+/// Portal local cuyo formulario apunta a otro origen. Devuelve su URL.
+fn foreign_portal() -> String {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut request = [0_u8; 2048];
+            let _ = std::io::Read::read(&mut stream, &mut request);
+            let page = "<form action=\"http://other.invalid/x\"><input name=\"username\">\
+                        <input type=\"password\" name=\"password\"></form>";
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{page}",
+                page.len()
+            );
+            let _ = stream.write_all(head.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}/login")
+}
+
+/// `intercept` real con conectividad y proxies falsos y un diálogo que devuelve
+/// credenciales las primeras `answers` veces y luego cancela. Devuelve el resultado y
+/// el `failed` de cada pregunta.
+fn run_with_prompt(rig: &Rig, answers: usize) -> (Outcome, Vec<bool>) {
+    let asked = Mutex::new(Vec::<bool>::new());
+    let intercept = |engine: &Engine, profile: &str| {
+        let mut prompt = |failed: bool| {
+            let mut asked = asked.lock().unwrap();
+            asked.push(failed);
+            (asked.len() <= answers).then(|| mito_engine::network::Credentials::new("ana", "clave"))
+        };
+        let overrides = crate::network::Overrides {
+            connectivity: Some(&Offline),
+            system: Some(mito_transfer::network::Proxies::default()),
+        };
+        crate::network::intercept_with_prompt(engine, profile, &overrides, &mut prompt);
+    };
+    let run = ["run", "--profile", "one", "--app", "extras/tool"];
+    let outcome = cli_intercept(rig, &run, &intercept);
+    let asked = asked.into_inner().unwrap();
+    (outcome, asked)
+}
+
+#[test]
+fn cancelar_el_dialogo_no_impide_lanzar() {
+    let rig = rig(0, false);
+    configure_portal(&rig, CLOSED, "proxy_authentication_require_https=false\n");
+    let (outcome, asked) = run_with_prompt(&rig, 0);
+    assert_eq!(outcome.code, 0, "{}", outcome.err);
+    assert_eq!(asked, [false]);
+}
+
+#[test]
+fn una_autenticacion_fallida_repite_el_dialogo_con_failed_y_lanza() {
+    let rig = rig(0, false);
+    configure_portal(&rig, CLOSED, "proxy_authentication_require_https=false\n");
+    let (outcome, asked) = run_with_prompt(&rig, 2);
+    assert_eq!(outcome.code, 0, "{}", outcome.err);
+    assert_eq!(asked, [false, true, true]);
+}
+
+#[test]
+fn un_error_de_configuracion_del_portal_se_registra_y_no_impide_lanzar() {
+    // El formulario apunta a otro origen: `authenticate` falla con error de configuración.
+    let rig = rig(0, false);
+    configure_portal(&rig, &foreign_portal(), "");
+    let (outcome, asked) = run_with_prompt(&rig, 5);
+    assert_eq!(outcome.code, 0, "{}", outcome.err);
+    assert_eq!(asked, [false]);
+    let log = fs::read_to_string(rig.engine.layout().logs().join("mito.log")).unwrap();
+    assert!(log.contains("network.authenticate"), "{log}");
+    assert!(!log.contains("clave"), "{log}");
+}
+
+#[test]
+fn sin_portal_configurado_no_se_pregunta() {
+    let rig = rig(0, false);
+    let (outcome, asked) = run_with_prompt(&rig, 5);
+    assert_eq!(outcome.code, 0);
+    assert_eq!(asked.len(), 0);
+}
+
+#[test]
+fn una_configuracion_ilegible_no_pregunta_y_el_lanzamiento_informa() {
+    let rig = rig(0, false);
+    fs::write(rig.engine.layout().config_file(), b"\xff\xfe\xfd").unwrap();
+    let (outcome, asked) = run_with_prompt(&rig, 5);
+    // El lanzamiento informa del error de lectura; el intercept no pregunta.
+    assert_eq!(outcome.code, 1);
+    assert!(outcome.err.contains("no es UTF-8"), "{}", outcome.err);
+    assert_eq!(asked.len(), 0);
+}
+
+#[test]
+fn un_profile_sin_entorno_no_pregunta_y_el_lanzamiento_informa_del_error() {
+    let rig = rig(0, false);
+    configure_portal(&rig, CLOSED, "proxy_authentication_require_https=false\n");
+    let asked = Mutex::new(0);
+    let intercept = |engine: &Engine, profile: &str| {
+        let mut prompt = |_: bool| {
+            *asked.lock().unwrap() += 1;
+            None
+        };
+        crate::network::intercept_with_prompt(
+            engine,
+            profile,
+            &crate::network::Overrides::default(),
+            &mut prompt,
+        );
+    };
+    let run = ["run", "--profile", "missing", "--app", "extras/tool"];
+    let outcome = cli_intercept(&rig, &run, &intercept);
+    assert_eq!(outcome.code, 1);
+    assert!(outcome.err.starts_with("MITO: "), "{}", outcome.err);
+    assert_eq!(*asked.lock().unwrap(), 0);
 }

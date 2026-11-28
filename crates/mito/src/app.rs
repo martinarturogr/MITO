@@ -30,6 +30,24 @@ use crate::host_run;
 use crate::jobs::ProcessJobs;
 use crate::shortcuts;
 
+/// Dependencias externas del despachador que las pruebas sustituyen.
+pub struct Seams<'a> {
+    /// ¿Están activadas las rutas largas de Windows?
+    pub long_paths: &'a dyn Fn() -> bool,
+    /// `intercept` de red antes de lanzar una aplicación: motor y profile.
+    pub intercept: &'a dyn Fn(&Engine, &str),
+}
+
+impl<'a> Seams<'a> {
+    /// Agrupa las dependencias.
+    pub fn new(long_paths: &'a dyn Fn() -> bool, intercept: &'a dyn Fn(&Engine, &str)) -> Self {
+        Self {
+            long_paths,
+            intercept,
+        }
+    }
+}
+
 /// Código de salida de un error de dominio.
 const FAILURE: i32 = 1;
 /// Código de salida tras Ctrl+C.
@@ -123,7 +141,10 @@ pub fn dispatch(
         console,
         operation,
         interrupted,
-        &mito_core::path_limit::long_paths_enabled,
+        &Seams::new(
+            &mito_core::path_limit::long_paths_enabled,
+            &crate::network::intercept_for_launch,
+        ),
     )
 }
 
@@ -145,7 +166,7 @@ pub fn dispatch_with(
     console: &Console,
     operation: &Operation,
     interrupted: &AtomicBool,
-    long_paths: &dyn Fn() -> bool,
+    seams: &Seams<'_>,
 ) -> i32 {
     let layout = engine.layout();
     let name = command.name();
@@ -180,7 +201,7 @@ pub fn dispatch_with(
         &[("runtime", diagnostics::environment())],
     );
     if blocks_on_long_root(command)
-        && let Some(message) = mito_core::path_limit::problem(engine.root(), long_paths)
+        && let Some(message) = mito_core::path_limit::problem(engine.root(), seams.long_paths)
     {
         let text = message.to_string();
         diagnostics::write(
@@ -206,7 +227,7 @@ pub fn dispatch_with(
     let result = engine
         .initialize()
         .map_err(anyhow::Error::from)
-        .and_then(|()| execute(engine, command, console, operation));
+        .and_then(|()| execute(engine, command, console, operation, seams));
     if interrupted.load(Ordering::SeqCst) {
         console.error_line("Operación interrumpida");
         return INTERRUPTED_EXIT;
@@ -324,6 +345,7 @@ fn execute(
     command: &Command,
     console: &Console,
     operation: &Operation,
+    seams: &Seams<'_>,
 ) -> anyhow::Result<i32> {
     match command {
         Command::Installed => installed(engine, console)?,
@@ -361,6 +383,9 @@ fn execute(
                 owned: run.owned,
                 shortcut: run.shortcut.as_deref(),
             };
+            if run.bin.is_none() {
+                (seams.intercept)(engine, &run.profile);
+            }
             return Ok(engine.launch(&run.profile, &options)?);
         }
         Command::Start { profile } => return start(engine, profile.as_deref(), console, operation),
@@ -369,13 +394,11 @@ fn execute(
                 approved: args.approved,
                 preview_welcome: args.preview_welcome,
             };
-            let downloader = engine.extensions().downloader.as_ref();
-            return Ok(bootstrap::run(
+            return Ok(bootstrap::run_production(
                 engine.layout(),
                 options,
                 console,
                 operation,
-                downloader,
             ));
         }
         Command::Terminal {
@@ -390,7 +413,10 @@ fn execute(
             mito_terminal::launch(engine, Some(profile), shell, None)?;
         }
         Command::Ui { profile } => return ui(engine, profile.as_deref()),
-        Command::HostRun(host) => return host_run::run(engine, host),
+        Command::HostRun(host) => {
+            (seams.intercept)(engine, &host.profile);
+            return host_run::run(engine, host);
+        }
         Command::AppShortcut(args) => shortcuts::app_shortcut(engine, args, console)?,
         Command::Shortcut {
             profile,
@@ -433,12 +459,11 @@ fn start(
     // Nunca se borra el último profile; solo el primer arranque puede no tener ninguno.
     engine.ensure_default_profile()?;
     if bootstrap::is_missing(engine.layout()) {
-        let code = bootstrap::run(
+        let code = bootstrap::run_production(
             engine.layout(),
             bootstrap::Options::default(),
             console,
             operation,
-            engine.extensions().downloader.as_ref(),
         );
         if code != 0 {
             return Ok(code);

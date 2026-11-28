@@ -20,7 +20,7 @@ expression: rig.draw()
                           │                                                                  │
          [ Configuración ]│ main/tool · 1.0                                                  │
                           │                                                                  │
-                          │ Se retirará de estos profiles: work                              │
+      [ Internet accesible│ Se retirará de estos profiles: work                              │
                           │                                                                  │
                           │ Se eliminarán los archivos de este componente. Se conservan el   │
                           │ home, los datos persistentes y los workspaces. Las aplicaciones  │

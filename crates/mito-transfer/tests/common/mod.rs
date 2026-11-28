@@ -14,11 +14,14 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-/// Petición recibida: ruta y cabeceras (nombres en minúsculas).
+/// Petición recibida: método, ruta (o URL absoluta si llega a un proxy), cabeceras
+/// (nombres en minúsculas) y cuerpo.
 #[derive(Debug)]
 pub struct Request {
+    pub method: String,
     pub path: String,
     pub headers: Vec<(String, String)>,
+    pub body: Vec<u8>,
 }
 
 impl Request {
@@ -118,12 +121,26 @@ fn read_request(stream: &mut dyn Read) -> Option<Request> {
     }
     let text = String::from_utf8_lossy(&raw);
     let mut lines = text.split("\r\n");
-    let path = lines.next()?.split(' ').nth(1)?.to_owned();
-    let headers = lines
+    let request_line = lines.next()?;
+    let method = request_line.split(' ').next()?.to_owned();
+    let path = request_line.split(' ').nth(1)?.to_owned();
+    let headers: Vec<(String, String)> = lines
         .filter_map(|line| line.split_once(':'))
         .map(|(n, v)| (n.trim().to_lowercase(), v.trim().to_owned()))
         .collect();
-    Some(Request { path, headers })
+    let length: usize = headers
+        .iter()
+        .find(|(n, _)| n == "content-length")
+        .and_then(|(_, v)| v.parse().ok())
+        .unwrap_or(0);
+    let mut body = vec![0_u8; length];
+    stream.read_exact(&mut body).ok()?;
+    Some(Request {
+        method,
+        path,
+        headers,
+        body,
+    })
 }
 
 fn serve(stream: TcpStream, tls: Option<Arc<rustls::ServerConfig>>, handler: &Handler) {
@@ -157,9 +174,13 @@ pub fn respond(out: &mut dyn Write, status: u16, headers: &[(&str, &str)], body:
     let reason = match status {
         200 => "OK",
         206 => "Partial Content",
+        204 => "No Content",
         302 => "Found",
         303 => "See Other",
+        400 => "Bad Request",
+        403 => "Forbidden",
         404 => "Not Found",
+        407 => "Proxy Authentication Required",
         504 => "Gateway Timeout",
         _ => "Status",
     };

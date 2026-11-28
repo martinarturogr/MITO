@@ -9,13 +9,21 @@ use ratatui::style::Style;
 use ratatui::text::Span;
 use ratatui::widgets::Paragraph;
 
+use zeroize::Zeroize;
+
 use super::focus::{Ui, WidgetId};
 use super::{WidgetEvent, text};
 use crate::input::Input;
 use crate::theme;
 
+/// Carácter con el que se dibuja un campo enmascarado (`password=True` de Textual).
+const MASK: char = '•';
+
 /// Campo de texto con cursor. El cursor y el límite se cuentan en `char`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+///
+/// Un campo [enmascarado](Self::masked) dibuja `•` en lugar de cada carácter y no
+/// muestra su contenido en `Debug`.
+#[derive(Clone, PartialEq, Eq)]
 pub struct TextInput {
     /// Id lógico.
     pub id: WidgetId,
@@ -29,8 +37,23 @@ pub struct TextInput {
     pub max_length: Option<usize>,
     /// Un campo deshabilitado no se registra y se dibuja atenuado.
     pub disabled: bool,
+    /// Dibuja `•` por carácter (contraseñas).
+    pub masked: bool,
     scroll: Cell<usize>,
     area: Cell<Rect>,
+}
+
+impl std::fmt::Debug for TextInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut debug = f.debug_struct("TextInput");
+        debug.field("id", &self.id);
+        if self.masked {
+            debug.field("len", &self.len());
+        } else {
+            debug.field("value", &self.value);
+        }
+        debug.field("cursor", &self.cursor).finish_non_exhaustive()
+    }
 }
 
 impl TextInput {
@@ -43,6 +66,7 @@ impl TextInput {
             placeholder: String::new(),
             max_length: None,
             disabled: false,
+            masked: false,
             scroll: Cell::new(0),
             area: Cell::new(Rect::ZERO),
         }
@@ -60,6 +84,36 @@ impl TextInput {
     pub fn with_placeholder(mut self, placeholder: impl Into<String>) -> Self {
         self.placeholder = placeholder.into();
         self
+    }
+
+    /// Enmascara el contenido al dibujarlo (campo de contraseña).
+    #[must_use]
+    pub fn with_mask(mut self) -> Self {
+        self.masked = true;
+        self
+    }
+
+    /// Entrega el contenido y deja el campo vacío, sin copias del texto en el campo.
+    pub fn take_value(&mut self) -> String {
+        self.cursor = 0;
+        self.scroll.set(0);
+        std::mem::take(&mut self.value)
+    }
+
+    /// Vacía el campo borrando el contenido de memoria.
+    pub fn wipe(&mut self) {
+        self.value.zeroize();
+        self.cursor = 0;
+        self.scroll.set(0);
+    }
+
+    /// Caracteres tal como se dibujan (enmascarados si procede).
+    fn shown_chars(&self) -> Vec<char> {
+        if self.masked {
+            vec![MASK; self.len()]
+        } else {
+            self.value.chars().collect()
+        }
     }
 
     /// Limita la longitud en caracteres.
@@ -206,7 +260,7 @@ impl TextInput {
             self.scroll.set(0);
         } else {
             // Ventana horizontal: el cursor siempre queda dentro.
-            let chars: Vec<char> = self.value.chars().collect();
+            let chars = self.shown_chars();
             let mut scroll = self.scroll.get().min(self.cursor);
             let cell = |c: char| text::width(c.encode_utf8(&mut [0; 4]));
             while chars[scroll..self.cursor.min(chars.len())]
@@ -234,7 +288,7 @@ impl TextInput {
             ui.focusable(&self.id, row);
         }
         if focused {
-            let chars: Vec<char> = self.value.chars().collect();
+            let chars = self.shown_chars();
             let offset: usize = chars
                 [self.scroll.get().min(chars.len())..self.cursor.min(chars.len())]
                 .iter()
@@ -364,5 +418,20 @@ mod tests {
         assert_eq!(input.cursor, 3);
         input.click(40);
         assert_eq!(input.cursor, 6);
+    }
+
+    #[test]
+    fn un_campo_enmascarado_no_muestra_ni_deja_su_contenido() {
+        let mut input = TextInput::new("p").with_mask();
+        type_text(&mut input, "secreto");
+        assert!(!format!("{input:?}").contains("secreto"));
+        let shown = input.shown_chars().into_iter().collect::<String>();
+        assert_eq!(shown, "•••••••");
+        assert_eq!(input.take_value(), "secreto");
+        assert!(input.is_empty());
+        type_text(&mut input, "otra");
+        input.wipe();
+        assert!(input.is_empty());
+        assert_eq!(input.cursor, 0);
     }
 }

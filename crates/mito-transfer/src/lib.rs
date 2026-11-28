@@ -8,6 +8,7 @@ pub mod download;
 pub mod error;
 pub mod hash;
 pub mod naming;
+pub mod network;
 mod stream;
 pub mod web;
 

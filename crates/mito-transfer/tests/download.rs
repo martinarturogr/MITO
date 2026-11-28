@@ -28,6 +28,8 @@ fn hex(algorithm: HashAlgorithm, data: &[u8]) -> String {
 fn fast() -> DownloadOptions {
     DownloadOptions {
         delay: Duration::ZERO,
+        // Conexión directa: ningún test usa el proxy del equipo.
+        proxies: Some(mito_transfer::network::Proxies::default()),
         ..DownloadOptions::default()
     }
 }

@@ -13,13 +13,13 @@ use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender, TrySendError, sync
 use std::thread;
 use std::time::Duration;
 
-use mito_core::Message;
 use mito_core::Operation;
 use reqwest::blocking::{Client, Response};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use reqwest::redirect::Policy;
 
 use crate::error::Error;
+use crate::network::{Proxies, process_environment};
 
 /// Tamaño del bloque de lectura (`read1(256 * 1024)`).
 const BLOCK: usize = 256 * 1024;
@@ -63,10 +63,8 @@ pub(crate) struct ClientConfig {
     pub insecure: bool,
     /// Timeout de conexión y de cada lectura.
     pub timeout: Duration,
-    /// Proxy explícito; `Some("")` anula el del sistema; `None` usa el de `reqwest`.
-    pub proxy: Option<String>,
-    /// Lista `no_proxy` que acompaña a `proxy`.
-    pub no_proxy: Option<String>,
+    /// Proxies resueltos; `None` usa los del sistema (`getproxies`).
+    pub proxies: Option<Proxies>,
 }
 
 fn build_client(config: &ClientConfig) -> Result<Client, Error> {
@@ -75,21 +73,15 @@ fn build_client(config: &ClientConfig) -> Result<Client, Error> {
         .timeout(Some(config.timeout))
         .connect_timeout(config.timeout)
         .danger_accept_invalid_certs(config.insecure);
-    match config.proxy.as_deref().map(str::trim) {
-        None => {}
-        Some("") => builder = builder.no_proxy(),
-        Some(url) => {
-            let mut proxy = reqwest::Proxy::all(url).map_err(|_| {
-                Error::domain(Message::new(
-                    "Configura una URL HTTP/HTTPS sin credenciales",
-                ))
-            })?;
-            if let Some(list) = config.no_proxy.as_deref() {
-                proxy = proxy.no_proxy(reqwest::NoProxy::from_string(list));
-            }
-            builder = builder.proxy(proxy);
-        }
-    }
+    // La semántica de `urllib` (entorno, registro, exclusiones) la aplica `Proxies`; el
+    // cliente no debe añadir la suya.
+    let proxies = config
+        .proxies
+        .clone()
+        .unwrap_or_else(|| Proxies::system(&process_environment()));
+    builder = builder
+        .no_proxy()
+        .proxy(reqwest::Proxy::custom(move |url| proxies.proxy_for(url)));
     builder.build().map_err(|e| Error::Network {
         reason: describe(&e),
     })

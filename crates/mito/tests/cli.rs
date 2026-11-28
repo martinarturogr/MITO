@@ -923,6 +923,12 @@ fn write_terminal_lock(instance: &Instance, artifact_url: Option<(&str, &[u8])>)
         "id": "windows-terminal", "version": "1.0",
         "required": ["WindowsTerminal.exe"], "artifacts": artifacts
     }]});
+    // Conexión directa por configuración: el bootstrap no consulta el proxy de Windows ni
+    // sondea Internet en las pruebas.
+    let config = instance.root().join("config.properties");
+    if !config.exists() {
+        fs::write(config, "https_proxy=\n").unwrap();
+    }
     fs::create_dir_all(instance.root().join("core")).unwrap();
     fs::write(
         instance.root().join("core/bootstrap.lock.json"),
@@ -1011,6 +1017,8 @@ fn bootstrap_aprobado_descarga_verifica_e_instala_desde_un_servidor_local() {
             .join("core/state/bootstrap-tools.json")
             .is_file()
     );
+    let log = fs::read_to_string(instance.root().join("logs/mito.log")).unwrap();
+    assert!(log.contains("Proxy disabled by config.properties"), "{log}");
     // Con todo listo, otra pasada no descarga ni pregunta.
     instance
         .mito()

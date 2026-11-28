@@ -151,7 +151,7 @@ fn write_lock(layout: &Layout, lock: &Value) {
 fn downloader() -> HttpDownloader {
     HttpDownloader::new(DownloadOptions {
         attempts: 1,
-        proxy: Some(String::new()),
+        proxies: Some(mito_transfer::network::Proxies::default()),
         ..DownloadOptions::default()
     })
 }

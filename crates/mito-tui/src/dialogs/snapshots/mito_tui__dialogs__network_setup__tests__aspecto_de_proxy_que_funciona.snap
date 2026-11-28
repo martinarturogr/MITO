@@ -1,0 +1,21 @@
+---
+source: crates/mito-tui/src/dialogs/network_setup.rs
+expression: "harness.draw(&mut dialog, 100, 24)"
+---
+
+
+
+
+
+
+          ╭──────────────────────────────────────────────────────────────────────────────╮
+          │ CONFIGURACIÓN DE RED                                                         │
+          │ Conexión directa, sin proxy                                                  │
+          │ El proxy da acceso a Internet.                                               │
+          │ Se guardarán estas claves en config.properties:                              │
+          │                                                                              │
+          │ https_proxy=                                                                 │
+          │                                                                              │
+          │                                                                              │
+          │         [ Guardar y conectar ]                     [ Cancelar ]              │
+          ╰──────────────────────────────────────────────────────────────────────────────╯

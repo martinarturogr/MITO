@@ -34,6 +34,7 @@ impl App {
             Arc::clone(&self.integration),
         );
         self.startup = Some((handle, rx));
+        self.mount_network();
     }
 
     /// Pide una acción: las que necesitan profile avisan «Selecciona un profile» si no
@@ -110,6 +111,7 @@ impl App {
 
     /// Procesa los informes que el hilo ya ha enviado, sin esperar.
     pub fn poll_reports(&mut self, now: Instant) {
+        self.poll_network_events();
         // Vacío o desconectado: no hay más informes que procesar.
         while let Ok(report) = self.reports_rx.try_recv() {
             self.on_report(report, now);
@@ -240,6 +242,7 @@ impl App {
             self.fire(timer.kind);
         }
         self.tick_dialogs();
+        self.network_tick(now);
     }
 
     fn fire(&mut self, kind: TimerKind) {

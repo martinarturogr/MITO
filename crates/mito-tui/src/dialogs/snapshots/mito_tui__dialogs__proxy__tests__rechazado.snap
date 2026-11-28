@@ -1,0 +1,22 @@
+---
+source: crates/mito-tui/src/dialogs/proxy.rs
+expression: "harness.draw(&mut dialog, 100, 24)"
+---
+
+
+
+
+
+                 ╭────────────────────────────────────────────────────────────────╮
+                 │ AUTENTICACIÓN DE RED                                           │
+                 │ Las credenciales no se guardan. Escape cancela.                │
+                 │                                                                │
+                 │ ana                                                            │
+                 │                                                                │
+                 │ Contraseña                                                     │
+                 │ No se pudo verificar Internet. Puedes reintentar o cancelar.   │
+                 │                                                                │
+                 │                          [ Conectar ]                          │
+                 │                                                                │
+                 │                          [ Cancelar ]                          │
+                 ╰────────────────────────────────────────────────────────────────╯
