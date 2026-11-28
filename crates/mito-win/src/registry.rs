@@ -275,10 +275,7 @@ impl Key {
             }
             check(status)?;
             data.truncate((bytes as usize).min(data.len()));
-            return Ok(Some(RawValue {
-                kind: kind.0,
-                data,
-            }));
+            return Ok(Some(RawValue { kind: kind.0, data }));
         }
     }
 
