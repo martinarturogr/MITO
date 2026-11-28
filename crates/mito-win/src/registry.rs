@@ -3,7 +3,7 @@
 use std::io;
 
 use windows::Win32::Foundation::{
-    ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_ITEMS, ERROR_SUCCESS, WIN32_ERROR,
+    ERROR_FILE_NOT_FOUND, ERROR_MORE_DATA, ERROR_NO_MORE_ITEMS, ERROR_SUCCESS, WIN32_ERROR,
 };
 use windows::Win32::System::Registry::{
     HKEY, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_64KEY, KEY_WRITE,
@@ -68,6 +68,15 @@ pub enum RegValue {
     None,
     /// Cualquier otro tipo, con su código.
     Other(u32),
+}
+
+/// Valor del registro sin interpretar.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RawValue {
+    /// Tipo del valor (`REG_SZ` = 1, `REG_EXPAND_SZ` = 2, `REG_BINARY` = 3…).
+    pub kind: u32,
+    /// Bytes del valor.
+    pub data: Vec<u8>,
 }
 
 fn os_error(status: WIN32_ERROR) -> io::Error {
@@ -215,6 +224,71 @@ impl Key {
             Some(RegValue::String(text)) => Some(text),
             _ => None,
         })
+    }
+
+    /// Valor `name` sin interpretar: su tipo (`REG_*`) y sus bytes. `None` si no existe.
+    ///
+    /// Lo usa el respaldo de las claves de protocolo, que debe restaurar cualquier tipo
+    /// (binarios, `DWORD`…) tal cual.
+    ///
+    /// # Errors
+    ///
+    /// El error del sistema si no se puede leer.
+    pub fn get_raw(&self, name: &str) -> io::Result<Option<RawValue>> {
+        let name = wide(name);
+        let mut kind = REG_VALUE_TYPE::default();
+        let mut size = 0_u32;
+        // SAFETY: consulta de tamaño: `name` es UTF-16 terminado en NUL y `kind`/`size`
+        // son enteros locales.
+        let status = unsafe {
+            RegQueryValueExW(
+                self.0,
+                PCWSTR(name.as_ptr()),
+                None,
+                Some(&raw mut kind),
+                None,
+                Some(&raw mut size),
+            )
+        };
+        if status == ERROR_FILE_NOT_FOUND {
+            return Ok(None);
+        }
+        check(status)?;
+        // El valor puede crecer entre las dos llamadas: se reintenta con el tamaño nuevo.
+        let mut data = vec![0_u8; size as usize + 2];
+        loop {
+            let mut bytes = u32::try_from(data.len()).unwrap_or(u32::MAX);
+            // SAFETY: `data` tiene `bytes` bytes; la función escribe como mucho `bytes`.
+            let status = unsafe {
+                RegQueryValueExW(
+                    self.0,
+                    PCWSTR(name.as_ptr()),
+                    None,
+                    Some(&raw mut kind),
+                    Some(data.as_mut_ptr()),
+                    Some(&raw mut bytes),
+                )
+            };
+            if status == ERROR_MORE_DATA {
+                data = vec![0_u8; (bytes as usize).max(data.len()) * 2];
+                continue;
+            }
+            check(status)?;
+            data.truncate((bytes as usize).min(data.len()));
+            return Ok(Some(RawValue {
+                kind: kind.0,
+                data,
+            }));
+        }
+    }
+
+    /// Escribe `name` con el tipo `kind` y los bytes `data` tal cual.
+    ///
+    /// # Errors
+    ///
+    /// El error del sistema.
+    pub fn set_raw(&self, name: &str, kind: u32, data: &[u8]) -> io::Result<()> {
+        self.set(name, REG_VALUE_TYPE(kind), Some(data))
     }
 
     fn set(&self, name: &str, kind: REG_VALUE_TYPE, data: Option<&[u8]>) -> io::Result<()> {
@@ -437,6 +511,39 @@ mod tests {
             .unwrap()
             .is_some()
         );
+    }
+
+    #[test]
+    fn los_valores_en_bruto_conservan_tipo_y_bytes() {
+        let name = format!("raw-{}", std::process::id());
+        let path = format!(r"Software\MITO-tests\{name}");
+        let key = Key::create(Hive::CurrentUser, &path).unwrap();
+        key.set_raw("Blob", 3, &[0, 1, 255]).unwrap();
+        key.set_raw("Numero", 4, &7_u32.to_le_bytes()).unwrap();
+        key.set_string("Texto", "ñ").unwrap();
+        assert_eq!(
+            key.get_raw("Blob").unwrap(),
+            Some(RawValue {
+                kind: 3,
+                data: vec![0, 1, 255]
+            })
+        );
+        assert_eq!(
+            key.get_raw("Numero").unwrap(),
+            Some(RawValue {
+                kind: 4,
+                data: 7_u32.to_le_bytes().to_vec()
+            })
+        );
+        let text = key.get_raw("Texto").unwrap().unwrap();
+        assert_eq!(text.kind, 1);
+        assert_eq!(text.data, [0xf1, 0, 0, 0]);
+        assert_eq!(key.get_raw("NoExiste").unwrap(), None);
+        drop(key);
+        let parent = Key::open(Hive::CurrentUser, r"Software\MITO-tests", true)
+            .unwrap()
+            .unwrap();
+        parent.delete_tree(&name).unwrap();
     }
 
     #[test]
