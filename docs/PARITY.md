@@ -47,9 +47,9 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `mcp_tools.py` | 285 | Esquemas MCP y adaptadores sobre los servicios genéricos | mito-mcp | F12 | ⬜ |
 | `mcp_ui.py` | 138 | Control y configuración MCP opt-in en Textual | mito-tui | F12 | ⬜ |
 | `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win (`msi`: lectura con `msi.dll`) y mito-transfer (`archives::extract_msi`) | F7 | ✅ |
-| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-desktop (`native`: `localize_script` y selectores del host) | F8 (los diálogos de credenciales F9 y de profiles F11 reutilizan `run_script`) | 🟨 |
-| `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
-| `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
+| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-desktop (`native`: `localize_script`, selectores del host y diálogo de credenciales del portal) | F8 / F9 (el diálogo de profiles F11 reutiliza `run_script`) | 🟨 |
+| `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer (`network`: proxies de `urllib`, sesión sin redirecciones, sondas, formulario del portal, proxy del sistema) y mito-engine (`network`: configuración, `check`, `authenticate`, `diagnose`, `apply`, `intercept`) | F9 | ✅ |
+| `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui (`dialogs::network_setup`, `dialogs::proxy`, `app::network`) | F9 | ✅ |
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-desktop (`open_with`) y mito-win (`registry`) | F8 | ✅ |
 | `open_with_ui.py` | 130 | Diálogo para gestionar extensiones «Abrir con» de un componente | mito-tui (`dialogs::open_with`) | F8 | ✅ |
 | `operation.py` | 110 | Progreso y cancelación cooperativa de la operación en curso | mito-core (`operation`) | F1 | ✅ |
@@ -83,7 +83,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `terminal_branding.py` | 139 | Copia con marca MITO del ejecutable privado de Windows Terminal | mito-terminal (`branding`) + mito-win (`resources`) | F5 | ✅ |
 | `terminal_identity.py` | 142 | Identidad explícita en barra de tareas para ventanas de Terminal | mito-terminal (`identity`) + mito-win (`taskbar`) | F5 | ✅ |
 | `transfer.py` | 402 | Descargas, hashes y validación de transferencias de componentes | mito-transfer (`download`, `hash`, `naming`, `web`) | F2 | ✅ |
-| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui (`app`, `dialogs`, `model`, `worker`, `integration`) | F6 y F8 (host, accesos, Extensiones, Protocolos y Host · ✓/✗; sin red, Pocketools, MCP, actualizar MITO ni «Versiones…»: fases posteriores) | 🟨 |
+| `ui.py` | 1952 | Interfaz Textual principal y diálogos de componentes | mito-tui (`app`, `dialogs`, `model`, `worker`, `integration`) | F6 y F8 (host, accesos, Extensiones, Protocolos y Host · ✓/✗) y F9 (INTERNET); sin Pocketools, MCP, actualizar MITO ni «Versiones…»: fases posteriores) | 🟨 |
 | `update_checks.py` | 31 | Comprobaciones diarias persistentes de actualización, incluidas las fallidas | mito-catalog (`checks`) | F3 `daily`; F11 consultas de MITO | 🟨 |
 | `versions.py` | 324 | Versiones previas de componentes desde histórico Git y autoupdate | mito-core | F11 | ⬜ |
 
@@ -95,7 +95,7 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 |---|---:|---|---|---|
 | `test_activation.py` | 11 | F4 | `mito-engine` (persistencia y reubicación); el resto depende de F5/F7 | 🟨 |
 | `test_application_entries.py` | 2 | F8 | `mito-engine/tests/launch.rs` (`accesos_sin_persistencia_y_ayuda_explicita`) y `mito-terminal::command` (`el_acoplado_conserva_la_seleccion_antes_de_los_argumentos`) | ✅ |
-| `test_bootstrap_proxy.py` | 2 | F9 |  | ⬜ |
+| `test_bootstrap_proxy.py` | 2 | F9 | `mito::bootstrap::proxy::tests` (los 2, con un proxy HTTP local por host en lugar del harness de PowerShell, más cada rama de la sección 5.7) | ✅ |
 | `test_bucket_resources.py` | 6 | F7 | `mito-catalog::resources` (parte `sources`) y `mito-engine::resources` (`prepare`); tests en `crates/mito/tests/hooks.rs` | ✅ |
 | `test_burn.py` | 8 | F7 | `mito-transfer::archives::burn` (7) y `crates/mito/tests/hooks.rs` (confinamiento de los helpers); camino feliz de `Expand-DarkArchive` y `Expand-MsiArchive` verificado E2E con `main/chezscheme` | ✅ |
 | `test_catalog_performance.py` | 4 | F3 | `mito-catalog` (`compat`, `buckets`) | ✅ |
@@ -118,8 +118,8 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_mcp_ui.py` | 3 | F12 |  | ⬜ |
 | `test_move_whole.py` | 5 | F11 |  | ⬜ |
 | `test_msi.py` | 5 | F7 | `mito-transfer::archives::msi` (5, con MSI y CAB reales) y `mito-engine/tests/extractors.rs` | ✅ |
-| `test_network.py` | 5 | F9 |  | ⬜ |
-| `test_network_setup.py` | 8 | F9 |  | ⬜ |
+| `test_network.py` | 5 | F9 | `mito-engine/tests/network.rs` (los 5, contra servidores y un proxy HTTP local) | ✅ |
+| `test_network_setup.py` | 8 | F9 | `mito-engine/tests/network.rs` (`DiagnoseTests`) y `mito-tui::app::tests_f9` (`NetworkSetupUITests`) | ✅ |
 | `test_open_with.py` | 9 | F8 | `mito-desktop::open_with` (rama de prueba de HKCU) | ✅ |
 | `test_path_limit.py` | 4 | F5 | `mito-core::path_limit` (3); 1 compara PowerShell con Python ➖ | ✅ |
 | `test_persistence_locations.py` | 2 | F1 | `mito-core::persistence` (2) | ✅ |
@@ -241,7 +241,7 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Marca del Terminal**: si `YitoTerminal.exe` no puede reconstruirse se usa `WindowsTerminal.exe` con un aviso en el log.
 - **Límite de ruta**: cuenta unidades UTF-16 y recorta `\` y `/` finales; se comprueba antes de «no disponible» para que `ui` quede bloqueado como en el original.
 - **Interfaz de texto (F6)** (ADR 0011): ratatui en lugar de Textual; mismas etiquetas, ids, orden de foco, colores y atajos, pero bordes y animaciones distintos. Los reportes del hilo, el reloj (`tick(now)`) y las entradas son los únicos puntos de entrada de `App`, lo que permite probarla sin terminal.
-- **Oculto hasta su fase**: Pocketools, MCP, estado de Internet, «Actualizar MITO», aplicaciones y carpetas del host, «Acc. directo», «Extensiones», «Protocolos», el selector «Proceso», exportar/importar, acceso directo y archivos de configuración de «Gestionar profile». «Versiones…» pasa a F11.
+- **Oculto hasta su fase**: Pocketools, MCP, «Actualizar MITO», el selector «Proceso», exportar/importar y archivos de configuración de «Gestionar profile». «Versiones…» pasa a F11.
 - **«Abrir» sin entradas de aplicación** no falla (el original leía `result[2]`); `Esc` con el diálogo de progreso o de paso largo abierto no cambia de página.
 - **Ocupado**: quedan activos «Copiar log», «Manifiesto», «Abrir Home», «Buscar e instalar…» e «Inicio · Instalados»/«Volver a Inicio» (el original los atendía en el manejador pero `begin` los deshabilitaba).
 - **Catálogo**: Intro (o un clic) sobre la fila con el cursor la selecciona; Textual resaltaba la primera fila al rellenar la tabla. Tras una acción que recarga el catálogo la selección vuelve a vaciarse, como `filter_catalog`.
@@ -253,4 +253,7 @@ Formatos que la versión Rust debe leer y escribir de forma compatible.
 - **Mensajes `MSI: …`, `Burn: …` e `Inno: …`** se conservan sin traducir, como el original; `MSI: CAB {p1}/{p2}`, `Archivos MSI: {p1}/{p2}` y `Herramienta incompleta: {p1}` sí son claves.
 - **Integración con Windows** (ADR 0013): los `.lnk`, «Abrir con» y protocolos lanzan `core\bin\mitow.exe` (sin consola) en lugar de `pythonw.exe -m mito`; los `.lnk` se escriben con `IShellLinkW` en lugar de PowerShell; las insignias usan la misma fuente que Pillow (Aileron) rasterizada con `ab_glyph`, con diferencias de antialias de 1-2 px. Reclamar un protocolo ya reclamado conserva el respaldo del dueño original del host (el original lo perdía).
 - **Búsquedas en el host**: el descubrimiento de accesos y la búsqueda de carpetas de `AppData` no siguen junctions ni enlaces, como `rglob`/`os.walk(followlinks=False)`.
-
+- **Red (F9)**: los proxies se resuelven con la semántica de `urllib` (`getproxies`, `proxy_bypass` y `ProxyHandler`) sobre `reqwest` con `Proxy::custom`; un proxy `https://` sin TLS hacia el proxy se trata como `http://`, como hacía `urllib`. Las entidades HTML del formulario del portal cubren las numéricas y las con nombre de HTML4 (no la tabla completa de HTML5). Las credenciales viven en `Zeroizing` y su `Debug` no muestra nada.
+- **Correcciones de red (F9)**: el diálogo de credenciales y `intercept` muestran o registran el motivo real de un error de configuración del portal (HTTPS obligatorio, otro origen), en vez de un mensaje genérico o nada; la configuración de red inválida es un error con mensaje y el sondeo silencioso no lo repite; `*.dominio` vale en `no_proxy`; el origen del formulario se compara normalizado (mayúsculas y puerto por defecto); la sonda de un proxy candidato no aplica las exclusiones del sistema; un `value` sin valor es `""` y el valor publicado de un campo de contraseña no se envía.
+- **`intercept`** comprueba primero si el portal está activado: sin portal no hace ninguna petición al lanzar una aplicación (el original sondeaba Internet en cada lanzamiento).
+- **Proxy del bootstrap**: «MITO no puede usarla» en lugar de «Python no puede usarla» para el proxy NTLM/Kerberos (`reqwest` tampoco las admite); si no se guarda la configuración, el proxy detectado se usa solo para las descargas de esa preparación (no se exporta a variables de entorno); el origen PAC se muestra como «script PAC» sin su URL; el guardado usa el editor de configuración (saltos de línea LF y validación de todas las claves).
