@@ -17,6 +17,7 @@ use mito_i18n::Translator;
 use super::catalog::CatalogState;
 use super::dialogs::Open;
 use super::home::HomeState;
+use super::network::NetState;
 use crate::integration::Integration;
 use crate::widgets::{Focus, LogView, Notice, Select, Severity};
 use crate::worker::Report;
@@ -114,6 +115,8 @@ pub struct App {
     pub(super) protocol_watch: Duration,
     pub(super) initial_profile: Option<String>,
     pub(super) quit: bool,
+    /// Botón INTERNET, sondeo y comprobaciones de red.
+    pub(super) net: NetState,
 }
 
 impl std::fmt::Debug for App {
@@ -157,6 +160,7 @@ impl App {
             protocol_watch: Duration::from_secs(mito_desktop::protocols::WATCH_SECONDS),
             initial_profile: profile,
             quit: false,
+            net: NetState::new(),
             page: Page::Home,
             engine,
             tr,

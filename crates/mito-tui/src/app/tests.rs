@@ -97,6 +97,7 @@ fn la_barra_lateral_sigue_el_orden_del_original_y_el_titulo_lleva_la_version() {
         "Buscar actualizaciones",
         "Abrir Home",
         "Configuración",
+        "Internet accesible",
     ];
     let mut last = 0;
     for label in order {
@@ -106,7 +107,7 @@ fn la_barra_lateral_sigue_el_orden_del_original_y_el_titulo_lleva_la_version() {
         last += at + label.len();
     }
     // Sin lo oculto de fases posteriores; «Agregar aplicación del host» es de F8.
-    for hidden in ["Pocketools", "MCP", "Internet", "Actualizar MITO"] {
+    for hidden in ["Pocketools", "MCP", "Actualizar MITO"] {
         assert!(!screen.contains(hidden), "{hidden}");
     }
     assert!(screen.contains("Agregar aplicación del host"));
@@ -119,6 +120,7 @@ fn la_barra_lateral_sigue_el_orden_del_original_y_el_titulo_lleva_la_version() {
             "check-updates",
             "open-home",
             "configuration",
+            "network-status",
             "browse",
             "host-add",
             "log",

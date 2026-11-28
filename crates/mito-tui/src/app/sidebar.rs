@@ -61,6 +61,7 @@ impl App {
             ("open-home", "Abrir Home", Variant::Default, false),
             ("configuration", "Configuración", Variant::Default, true),
         ];
+        let (network_label, network_variant) = self.network_button();
         for (id, label, variant, disables) in buttons {
             stack.gap(gap);
             let row = stack.take(1);
@@ -69,6 +70,11 @@ impl App {
                 .disabled(disables && busy)
                 .render(frame, row, ui);
         }
+        stack.gap(gap);
+        let row = stack.take(1);
+        Button::new("network-status", network_label)
+            .variant(network_variant)
+            .render(frame, row, ui);
         if self.busy.indicator {
             stack.gap(gap);
             let rect = stack.take(3);
@@ -88,6 +94,7 @@ impl App {
             "check-updates" => self.request(Action::CheckUpdates),
             "open-home" => self.open_home_folder(),
             "configuration" => self.open_configuration(None),
+            "network-status" => self.press_network(),
             _ => return false,
         }
         true
