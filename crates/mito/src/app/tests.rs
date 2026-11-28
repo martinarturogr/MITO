@@ -748,7 +748,7 @@ fn sin_portal_configurado_no_se_pregunta() {
     let rig = rig(0, false);
     let (outcome, asked) = run_with_prompt(&rig, 5);
     assert_eq!(outcome.code, 0);
-    assert!(asked.is_empty());
+    assert_eq!(asked.len(), 0);
 }
 
 #[test]
@@ -759,7 +759,7 @@ fn una_configuracion_ilegible_no_pregunta_y_el_lanzamiento_informa() {
     // El lanzamiento informa del error de lectura; el intercept no pregunta.
     assert_eq!(outcome.code, 1);
     assert!(outcome.err.contains("no es UTF-8"), "{}", outcome.err);
-    assert!(asked.is_empty());
+    assert_eq!(asked.len(), 0);
 }
 
 #[test]

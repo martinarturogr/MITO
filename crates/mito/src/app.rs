@@ -141,10 +141,10 @@ pub fn dispatch(
         console,
         operation,
         interrupted,
-        &Seams {
-            long_paths: &mito_core::path_limit::long_paths_enabled,
-            intercept: &crate::network::intercept_for_launch,
-        },
+        &Seams::new(
+            &mito_core::path_limit::long_paths_enabled,
+            &crate::network::intercept_for_launch,
+        ),
     )
 }
 
@@ -394,13 +394,11 @@ fn execute(
                 approved: args.approved,
                 preview_welcome: args.preview_welcome,
             };
-            let downloader = engine.extensions().downloader.as_ref();
-            return Ok(bootstrap::run(
+            return Ok(bootstrap::run_production(
                 engine.layout(),
                 options,
                 console,
                 operation,
-                downloader,
             ));
         }
         Command::Terminal {
@@ -461,12 +459,11 @@ fn start(
     // Nunca se borra el último profile; solo el primer arranque puede no tener ninguno.
     engine.ensure_default_profile()?;
     if bootstrap::is_missing(engine.layout()) {
-        let code = bootstrap::run(
+        let code = bootstrap::run_production(
             engine.layout(),
             bootstrap::Options::default(),
             console,
             operation,
-            engine.extensions().downloader.as_ref(),
         );
         if code != 0 {
             return Ok(code);
