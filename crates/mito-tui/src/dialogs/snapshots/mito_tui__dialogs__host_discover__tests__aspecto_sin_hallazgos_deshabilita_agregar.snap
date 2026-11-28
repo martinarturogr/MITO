@@ -1,0 +1,32 @@
+---
+source: crates/mito-tui/src/dialogs/host_discover.rs
+expression: text
+---
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │                                                                                        │
+     │                               AGREGAR APLICACIÓN DEL HOST                         ×    │
+     │                                                                                        │
+     │   Aplicaciones encontradas en el menú Inicio y el escritorio del host. Si falta        │
+     │   alguna, usa Examinar.                                                                │
+     │                                                                                        │
+     │   Filtrar…                                                                             │
+     │                                                                                        │
+     │   No se ha encontrado ninguna aplicación.                                              │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │          [ Examinar… ]               [ Cancelar ]                [ Agregar ]           │
+     │                                                                                        │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

@@ -9,7 +9,8 @@ use std::path::Path;
 use windows::Win32::Foundation::{FreeLibrary, HMODULE};
 use windows::Win32::System::LibraryLoader::{
     BeginUpdateResourceW, EndUpdateResourceW, EnumResourceLanguagesW, EnumResourceNamesW,
-    LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_IMAGE_RESOURCE, LoadLibraryExW, UpdateResourceW,
+    FindResourceW, LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_IMAGE_RESOURCE, LoadLibraryExW,
+    LoadResource, LockResource, SizeofResource, UpdateResourceW,
 };
 use windows::core::{BOOL, PCWSTR};
 
@@ -195,6 +196,134 @@ pub fn group_icons(executable: &Path) -> io::Result<Vec<(ResourceName, u16)>> {
     Ok(pairs)
 }
 
+/// Fallos al leer el primer icono de un ejecutable (`_extract_first_pe_icon`). El
+/// consumidor los convierte en los mensajes del original.
+#[derive(Debug, thiserror::Error)]
+pub enum IconReadError {
+    /// `LoadLibraryExW` falló, con el código de Windows.
+    #[error("Windows no pudo abrir los recursos: error {0}")]
+    Open(i32),
+    /// El ejecutable no tiene grupos de iconos.
+    #[error("El ejecutable no contiene un icono extraíble")]
+    NoIcon,
+    /// `FindResourceW` no encontró el recurso.
+    #[error("Windows no pudo localizar un recurso de icono")]
+    Locate,
+    /// `LoadResource`, `LockResource` o el tamaño fallaron.
+    #[error("Windows no pudo cargar un recurso de icono")]
+    Load,
+    /// El grupo mide menos de 6 bytes.
+    #[error("Recurso de icono truncado")]
+    Truncated,
+    /// Cabecera del grupo no válida.
+    #[error("Recurso de icono no válido")]
+    Invalid,
+    /// El directorio del grupo no cabe en el recurso.
+    #[error("Directorio de icono truncado")]
+    DirectoryTruncated,
+}
+
+/// Bytes de un recurso `(kind, name)` de `module`.
+fn resource_bytes(
+    module: &DataModule,
+    kind: usize,
+    name: &Resource,
+) -> Result<Vec<u8>, IconReadError> {
+    // SAFETY: `module` está cargado; `kind` es un entero de `MAKEINTRESOURCE` y `name`
+    // un entero o un búfer propio que sigue vivo durante la llamada.
+    let found =
+        unsafe { FindResourceW(Some(module.0), name.pointer(), PCWSTR(kind as *const u16)) };
+    if found.is_invalid() {
+        return Err(IconReadError::Locate);
+    }
+    // SAFETY: `found` es un recurso válido de `module`.
+    let size = unsafe { SizeofResource(Some(module.0), found) };
+    if size == 0 {
+        return Err(IconReadError::Load);
+    }
+    // SAFETY: como arriba.
+    let loaded = unsafe { LoadResource(Some(module.0), found) }.map_err(|_| IconReadError::Load)?;
+    // SAFETY: `loaded` es el recurso cargado; el puntero es válido mientras el módulo
+    // siga cargado, y se copia antes de liberarlo.
+    let pointer = unsafe { LockResource(loaded) };
+    if pointer.is_null() {
+        return Err(IconReadError::Load);
+    }
+    // SAFETY: `pointer` apunta a `size` bytes del recurso bloqueado.
+    let bytes = unsafe { std::slice::from_raw_parts(pointer.cast::<u8>(), size as usize) };
+    Ok(bytes.to_vec())
+}
+
+fn u16_at(data: &[u8], at: usize) -> u16 {
+    u16::from_le_bytes([data[at], data[at + 1]])
+}
+
+/// Primer grupo de iconos de `executable` (`.exe` o `.dll`) como un archivo `.ico`
+/// completo, con las imágenes `RT_ICON` que referencia (`_extract_first_pe_icon`).
+///
+/// # Errors
+///
+/// [`IconReadError`] con el motivo del original.
+pub fn first_icon(executable: &Path) -> Result<Vec<u8>, IconReadError> {
+    let path = wide(&executable.display().to_string());
+    // SAFETY: `path` es una cadena UTF-16 terminada en NUL que vive durante la llamada.
+    let module = unsafe {
+        LoadLibraryExW(
+            PCWSTR(path.as_ptr()),
+            None,
+            LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE,
+        )
+    }
+    .map_err(|e| IconReadError::Open(e.code().0 & 0xffff))?;
+    let module = DataModule(module);
+    let mut names: Vec<ResourceName> = Vec::new();
+    // SAFETY: `module` es un módulo cargado; `collect_names` respeta la firma y recibe
+    // un puntero a `names`, que vive durante esta llamada síncrona.
+    unsafe {
+        let _ = EnumResourceNamesW(
+            Some(module.0),
+            group_icon_type(),
+            Some(collect_names),
+            (&raw mut names) as isize,
+        );
+    }
+    let first = names.first().ok_or(IconReadError::NoIcon)?;
+    let group = resource_bytes(&module, RT_GROUP_ICON, &Resource::from_name(first))?;
+    if group.len() < 6 {
+        return Err(IconReadError::Truncated);
+    }
+    let (reserved, kind, count) = (
+        u16_at(&group, 0),
+        u16_at(&group, 2),
+        usize::from(u16_at(&group, 4)),
+    );
+    if reserved != 0 || kind != 1 || count < 1 {
+        return Err(IconReadError::Invalid);
+    }
+    if group.len() < 6 + 14 * count {
+        return Err(IconReadError::DirectoryTruncated);
+    }
+    let mut directory = Vec::with_capacity(6 + 16 * count);
+    directory.extend_from_slice(&group[..6]);
+    let mut images = Vec::new();
+    let mut offset = u32::try_from(6 + 16 * count).map_err(|_| IconReadError::Invalid)?;
+    for index in 0..count {
+        let entry = &group[6 + 14 * index..6 + 14 * (index + 1)];
+        let id = u16_at(entry, 12);
+        let image = resource_bytes(&module, RT_ICON, &Resource::Id(id))?;
+        let size = u32::try_from(image.len()).map_err(|_| IconReadError::Invalid)?;
+        directory.extend_from_slice(&entry[..8]);
+        directory.extend_from_slice(&size.to_le_bytes());
+        directory.extend_from_slice(&offset.to_le_bytes());
+        offset = offset.checked_add(size).ok_or(IconReadError::Invalid)?;
+        images.push(image);
+    }
+    for image in images {
+        directory.extend_from_slice(&image);
+    }
+    Ok(directory)
+}
+
 /// Datos del grupo (`GRPICONDIR` más una `GRPICONDIRENTRY` de 14 bytes por imagen).
 fn group_data(images: &[IconImage]) -> Option<Vec<u8>> {
     let mut data = Vec::with_capacity(6 + images.len() * 14);
@@ -288,6 +417,32 @@ mod tests {
             header: [width, width, 0, 0, 1, 0, 32, 0],
             data: vec![7; size],
         }
+    }
+
+    #[test]
+    fn el_primer_icono_de_un_ejecutable_es_un_ico_completo() {
+        let explorer = Path::new(r"C:\Windows\explorer.exe");
+        let ico = first_icon(explorer).unwrap();
+        assert_eq!(&ico[..4], &[0, 0, 1, 0]);
+        let count = usize::from(u16::from_le_bytes([ico[4], ico[5]]));
+        assert!(count >= 1);
+        // Cada entrada apunta dentro del archivo y las imágenes van seguidas.
+        let mut expected = 6 + 16 * count;
+        for index in 0..count {
+            let entry = &ico[6 + 16 * index..6 + 16 * (index + 1)];
+            let size = u32::from_le_bytes(entry[8..12].try_into().unwrap()) as usize;
+            let offset = u32::from_le_bytes(entry[12..16].try_into().unwrap()) as usize;
+            assert_eq!(offset, expected);
+            expected += size;
+        }
+        assert_eq!(expected, ico.len());
+        let folder = tempfile::tempdir().unwrap();
+        let plain = folder.path().join("sin-icono.dll");
+        std::fs::copy(r"C:\Windows\System32\version.dll", &plain).unwrap();
+        assert!(matches!(first_icon(&plain), Err(IconReadError::NoIcon)));
+        let text = folder.path().join("texto.exe");
+        std::fs::write(&text, b"no soy un PE").unwrap();
+        assert!(matches!(first_icon(&text), Err(IconReadError::Open(_))));
     }
 
     #[test]

@@ -105,16 +105,11 @@ fn la_barra_lateral_sigue_el_orden_del_original_y_el_titulo_lleva_la_version() {
             .unwrap_or_else(|| panic!("{label} no aparece tras la posición {last}\n{sidebar}"));
         last += at + label.len();
     }
-    // Sin lo oculto de fases posteriores.
-    for hidden in [
-        "Pocketools",
-        "MCP",
-        "Internet",
-        "Actualizar MITO",
-        "Agregar aplicación",
-    ] {
+    // Sin lo oculto de fases posteriores; «Agregar aplicación del host» es de F8.
+    for hidden in ["Pocketools", "MCP", "Internet", "Actualizar MITO"] {
         assert!(!screen.contains(hidden), "{hidden}");
     }
+    assert!(screen.contains("Agregar aplicación del host"));
     assert_eq!(
         rig.app.focus.order(),
         [
@@ -125,6 +120,7 @@ fn la_barra_lateral_sigue_el_orden_del_original_y_el_titulo_lleva_la_version() {
             "open-home",
             "configuration",
             "browse",
+            "host-add",
             "log",
             "copy-log"
         ]

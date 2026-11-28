@@ -1,0 +1,25 @@
+---
+source: crates/mito-tui/src/dialogs/shortcut.rs
+expression: text
+---
+
+
+
+
+
+
+
+
+
+             ╭────────────────────────────────────────────────────╮
+             │ Generar acceso directo                             │
+             │                                                    │
+             │ Letras del icono (máximo 4)                        │
+             │ MITO                                               │
+             │                                                    │
+             │ Color del fondo                                    │
+             │     Negro        Rojo        Azul       ✓ Naranja  │
+             │     Rosa         Verde      Marron       Morado    │
+             │                                                    │
+             │       [ Cancelar ]               [ Generar ]       │
+             ╰────────────────────────────────────────────────────╯

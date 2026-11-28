@@ -13,12 +13,13 @@ use crate::widgets::{Button, Focus, Stack, TextInput, Ui, Variant, WidgetEvent, 
 const CLOSE: &str = "manage-profile-close";
 const NEW_PROFILE: &str = "new-profile";
 const CREATE: &str = "create";
+const SHORTCUT: &str = "mito-shortcut";
 const CONFIGURATION: &str = "profile-configuration";
 const DELETE: &str = "delete-profile";
 
-/// «GESTIONAR PROFILE». En F6 solo ofrece «Crear profile», «Configuración» y «Eliminar
-/// profile» (Exportar, Importar, Acceso directo y Archivos de configuración llegan en
-/// fases posteriores). Se cierra con [`Outcome::Profile`]; `Esc` y `×` dan
+/// «GESTIONAR PROFILE». Ofrece «Crear profile», «Acceso directo» (F8), «Configuración» y
+/// «Eliminar profile» (Exportar, Importar y Archivos de configuración llegan en fases
+/// posteriores). Se cierra con [`Outcome::Profile`]; `Esc` y `×` dan
 /// [`ProfileChoice::Cancel`].
 #[derive(Debug)]
 pub struct ManageProfileDialog {
@@ -58,6 +59,7 @@ impl ManageProfileDialog {
         match id {
             CLOSE => Self::choose(ProfileChoice::Cancel),
             CREATE => self.create(),
+            SHORTCUT if self.profile.is_some() => Self::choose(ProfileChoice::Shortcut),
             CONFIGURATION if self.profile.is_some() => Self::choose(ProfileChoice::Configuration),
             DELETE if self.can_delete => Self::choose(ProfileChoice::Delete),
             _ => Step::Stay,
@@ -67,7 +69,7 @@ impl ManageProfileDialog {
 
 impl Dialog for ManageProfileDialog {
     fn render(&mut self, frame: &mut Frame, screen: Rect, ui: &mut Ui) {
-        let area = modal::area(screen, Size::Cells(62), Size::Auto(13));
+        let area = modal::area(screen, Size::Cells(62), Size::Auto(15));
         let inner = modal::frame(frame, area, theme::BORDER);
         let mut stack = Stack::new(inner);
         header::render(
@@ -88,6 +90,10 @@ impl Dialog for ManageProfileDialog {
         stack.gap(1);
         Button::new(CREATE, ui.tr.text("Crear profile"))
             .variant(Variant::Primary)
+            .render(frame, stack.take(1), ui);
+        stack.gap(1);
+        Button::new(SHORTCUT, ui.tr.text("Acceso directo"))
+            .disabled(self.profile.is_none())
             .render(frame, stack.take(1), ui);
         stack.gap(1);
         Button::new(CONFIGURATION, ui.tr.text("Configuración"))
@@ -163,6 +169,7 @@ mod tests {
         let mut harness = Harness::new();
         let mut dialog = ManageProfileDialog::new(None, false);
         insta::assert_snapshot!(harness.draw(&mut dialog, 80, 24));
+        assert!(!dialog.focus().is_registered(SHORTCUT));
         assert!(!dialog.focus().is_registered(CONFIGURATION));
         assert!(!dialog.focus().is_registered(DELETE));
         assert_eq!(harness.click(&mut dialog, CREATE), Step::Stay);
@@ -173,12 +180,7 @@ mod tests {
         let harness = Harness::spanish();
         let mut dialog = ManageProfileDialog::new(Some("uno"), true);
         let text = harness.draw(&mut dialog, 80, 24);
-        for hidden in [
-            "Exportar",
-            "Importar",
-            "Acceso directo",
-            "Archivos de configuración",
-        ] {
+        for hidden in ["Exportar", "Importar", "Archivos de configuración"] {
             assert!(!text.contains(hidden), "{hidden}: {text}");
         }
     }
@@ -230,6 +232,17 @@ mod tests {
         assert_eq!(
             harness.press(&mut dialog, KeyCode::Enter),
             Step::Close(Outcome::Profile(ProfileChoice::Delete))
+        );
+    }
+
+    #[test]
+    fn acceso_directo_devuelve_su_eleccion() {
+        let mut harness = Harness::new();
+        let mut dialog = ManageProfileDialog::new(Some("uno"), true);
+        harness.draw(&mut dialog, 80, 24);
+        assert_eq!(
+            harness.click(&mut dialog, SHORTCUT),
+            Step::Close(Outcome::Profile(ProfileChoice::Shortcut))
         );
     }
 

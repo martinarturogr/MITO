@@ -151,6 +151,12 @@ impl Layout {
     pub fn mito_exe(&self) -> PathBuf {
         self.bin().join("mito.exe")
     }
+
+    /// `core/bin/mitow.exe`: el mismo MITO sin consola, destino de los accesos
+    /// directos, «Abrir con» y protocolos (ADR 0013).
+    pub fn mitow_exe(&self) -> PathBuf {
+        self.bin().join("mitow.exe")
+    }
 }
 
 #[cfg(test)]

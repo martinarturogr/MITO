@@ -1,0 +1,20 @@
+---
+source: crates/mito-tui/src/dialogs/remove_host.rs
+expression: "harness.draw(&mut dialog(), 80, 24)"
+---
+
+
+
+
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────╮
+     │ Remove Foo.exe from MITO?                                          │
+     │                                                                    │
+     │ The reference and its cache/data links will be removed. The host   │
+     │ executable and its data are preserved.                             │
+     │                                                                    │
+     │            [ Cancel ]                        [ Remove ]            │
+     ╰────────────────────────────────────────────────────────────────────╯

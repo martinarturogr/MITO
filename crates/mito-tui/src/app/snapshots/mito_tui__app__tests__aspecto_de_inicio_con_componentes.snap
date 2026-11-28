@@ -9,12 +9,12 @@ expression: rig.draw()
                                     2 instalados · 1 activos en work · 0 del host
        [ Gestionar profile ]        Los cambios de entorno se cargan al abrir una nueva pestaña.
 
-                                     [ ] main/editor   ·   2.0                                  [ Info ] [ Eliminar ]
-  ACCIONES
-                                     [X] main/tool   ·   1.0           [ Abrir ] [ Info ] [ Actualizar ] [ Eliminar ]
-      [ Inicio · Instalados ]
+                                     [ ] main/editor   ·   2.0
+  ACCIONES                           [ Host · ✗ ] [ Info ] [ Eliminar ]
 
-    [ Buscar actualizaciones ]
+      [ Inicio · Instalados ]        [X] main/tool   ·   1.0
+                                     [ Abrir ] [ Acc. directo ] [ Extensiones ✗ ] [ Protocolos ] [ Host · ✗ ]
+    [ Buscar actualizaciones ]       [ Info ] [ Actualizar ] [ Eliminar ]
 
           [ Abrir Home ]
 
@@ -31,7 +31,7 @@ expression: rig.draw()
 
 
 
-                                                         [ Buscar e instalar nuevos componentes ]
+                                    [ Buscar e instalar nuevos componentes ] [ Agregar aplicación del host ]
 
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 Comprobando actualizaciones de componentes instalados…

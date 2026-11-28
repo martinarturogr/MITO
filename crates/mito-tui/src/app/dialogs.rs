@@ -5,6 +5,7 @@
 
 use std::sync::mpsc::Sender;
 
+use mito_desktop::{open_with, protocols};
 use mito_i18n::Translator;
 use ratatui::Frame;
 use ratatui::layout::Rect;
@@ -12,15 +13,16 @@ use ratatui::layout::Rect;
 use super::state::App;
 use crate::dialogs::{
     ComponentInfoDialog, ConfigurationDialog, Context, DeleteProfileDialog, Dialog,
-    DownloadIntegrityDialog, InstallVersionDialog, LongStepDialog, ManageProfileDialog,
-    ManifestDialog, OpenApplicationDialog, OperationDialog, Outcome, ProfileChoice,
-    RemoveComponentDialog, Step, UnverifiedDownloadsDialog,
+    DownloadIntegrityDialog, HostDataConfirm, InstallVersionDialog, LongStepDialog,
+    ManageProfileDialog, ManifestDialog, OpenApplicationDialog, OpenWithDialog, OperationDialog,
+    Outcome, ProfileChoice, ProtocolDialog, RemoveComponentDialog, Step, ThreadedSession,
+    UnverifiedDownloadsDialog,
 };
 use crate::input::Input;
 use crate::model::describe;
 use crate::widgets::notice::LANGUAGE_TIMEOUT;
 use crate::widgets::{Notice, Severity};
-use crate::worker::{Action, Request};
+use crate::worker::{Action, Pick, Request};
 
 /// El diálogo en sí. Los de progreso y paso largo se guardan con su tipo para poder
 /// cerrarlos desde la aplicación (`finish`).
@@ -63,6 +65,24 @@ pub(super) enum Purpose {
     Confirm(Sender<bool>),
     /// Descarga alterada por la red.
     Integrity,
+    /// Acceso directo de una aplicación instalada (F8).
+    ApplicationShortcut(String),
+    /// «Abrir con» de una aplicación instalada (F8).
+    OpenWith(String),
+    /// Abrir la aplicación del host con esa identidad (F8).
+    HostOpen(String),
+    /// Acceso directo de la aplicación del host con esa identidad (F8).
+    HostShortcut(String),
+    /// Quitar la aplicación del host con esa identidad (F8).
+    HostRemove(String),
+    /// Información de una aplicación del host.
+    HostInfo,
+    /// Acceso directo a MITO de «Gestionar profile» (F8).
+    MitoShortcut,
+    /// Reclamar protocolos de una aplicación.
+    Protocols,
+    /// Elegir una aplicación del host: la respuesta vuelve por el canal.
+    Pick(Sender<Pick>),
     /// Progreso de la operación.
     Progress,
     /// Aviso de paso largo.
@@ -180,11 +200,19 @@ impl App {
             (Purpose::Remove(installation), Outcome::Confirmed(true)) => {
                 self.request(Action::RemoveComponent(installation));
             }
-            (Purpose::OpenApplication(installation), Outcome::Open { arguments, entry }) => {
+            (
+                Purpose::OpenApplication(installation),
+                Outcome::Open {
+                    arguments,
+                    entry,
+                    coupled,
+                },
+            ) => {
                 self.request(Action::Launch {
                     installation,
                     arguments,
                     shortcut: entry,
+                    coupled,
                 });
             }
             (Purpose::Configuration(profile), Outcome::Saved(true)) => {
@@ -195,6 +223,58 @@ impl App {
             }
             (Purpose::DeleteProfile, Outcome::Confirmed(true)) => {
                 self.request(Action::DeleteProfile);
+            }
+            (Purpose::ApplicationShortcut(installation), Outcome::Shortcut(choice)) => {
+                self.request(Action::ApplicationShortcut {
+                    installation,
+                    badge: choice.badge,
+                    color: choice.color,
+                    coupled: choice.coupled,
+                    arguments: choice.arguments,
+                    shortcut: choice.entry,
+                });
+            }
+            (Purpose::OpenWith(installation), Outcome::OpenWith(wanted)) => {
+                self.request(Action::OpenWith {
+                    installation,
+                    wanted,
+                });
+            }
+            (
+                Purpose::HostOpen(identity),
+                Outcome::Open {
+                    arguments, coupled, ..
+                },
+            ) => {
+                self.request(Action::HostOpen {
+                    identity,
+                    arguments,
+                    coupled,
+                });
+            }
+            (Purpose::HostShortcut(identity), Outcome::Shortcut(choice)) => {
+                self.request(Action::HostShortcut {
+                    identity,
+                    badge: choice.badge,
+                    color: choice.color,
+                    coupled: choice.coupled,
+                    arguments: choice.arguments,
+                });
+            }
+            (Purpose::HostRemove(identity), Outcome::Confirmed(true)) => {
+                self.request(Action::HostRemove(identity));
+            }
+            (Purpose::MitoShortcut, Outcome::Shortcut(choice)) => {
+                self.request(Action::MitoShortcut {
+                    badge: choice.badge,
+                    color: choice.color,
+                });
+            }
+            (Purpose::Pick(answer), Outcome::HostApplication(pick)) => {
+                let _ = answer.send(pick);
+            }
+            (Purpose::Pick(answer), _) => {
+                let _ = answer.send(Pick::Cancel);
             }
             (Purpose::Confirm(answer), outcome) => {
                 let _ = answer.send(matches!(outcome, Outcome::Confirmed(true)));
@@ -231,6 +311,7 @@ impl App {
         match choice {
             ProfileChoice::Cancel => {}
             ProfileChoice::Create(name) => self.request(Action::Create(name)),
+            ProfileChoice::Shortcut => self.open_mito_shortcut(),
             ProfileChoice::Configuration => {
                 let profile = self.current_profile();
                 self.open_configuration(profile);
@@ -286,6 +367,10 @@ impl App {
             Request::Unverified(downloads) => {
                 self.push_dialog(UnverifiedDownloadsDialog::new(downloads), purpose);
             }
+            Request::HostConfirm { message, label } => {
+                let text = self.tr.tr(&message);
+                self.push_dialog(HostDataConfirm::new(text, label), purpose);
+            }
         }
     }
 
@@ -321,6 +406,39 @@ impl App {
                 let dialog = RemoveComponentDialog::new(&record, self.engine.users(installation));
                 self.push_dialog(dialog, Purpose::Remove(installation.to_owned()));
             }
+            ComponentDialog::Shortcut => {
+                if self.require_profile().is_none() {
+                    return;
+                }
+                match self.engine.application_entries(&record) {
+                    Ok(entries) => {
+                        let labels = entries.into_iter().map(|entry| entry.label).collect();
+                        let purpose = Purpose::ApplicationShortcut(installation.to_owned());
+                        self.open_shortcut(true, labels, purpose);
+                    }
+                    Err(error) => self.component_error(&error, "component.shortcut"),
+                }
+            }
+            ComponentDialog::OpenWith => {
+                let Some(profile) = self.require_profile() else {
+                    return;
+                };
+                match self.open_with_dialog(&record, &profile, installation) {
+                    Ok(dialog) => {
+                        self.push_dialog(dialog, Purpose::OpenWith(installation.to_owned()));
+                    }
+                    Err(error) => self.component_error(&error, "open-with.open"),
+                }
+            }
+            ComponentDialog::Protocols => {
+                let Some(profile) = self.require_profile() else {
+                    return;
+                };
+                match self.protocol_dialog(&record, &profile, installation) {
+                    Ok(dialog) => self.push_dialog(dialog, Purpose::Protocols),
+                    Err(error) => self.component_error(&error, "protocols.open"),
+                }
+            }
             ComponentDialog::Open => {
                 if self.current_profile().is_none() {
                     let text = self.text("Selecciona un profile");
@@ -339,6 +457,63 @@ impl App {
         }
     }
 
+    /// `OpenWithDialog` con lo ya registrado para el profile.
+    fn open_with_dialog(
+        &self,
+        record: &mito_engine::Record,
+        profile: &str,
+        installation: &str,
+    ) -> mito_engine::Result<OpenWithDialog> {
+        let labels = self
+            .engine
+            .application_entries(record)?
+            .into_iter()
+            .map(|entry| entry.label)
+            .collect();
+        let current: Vec<(String, Vec<String>)> =
+            open_with::entries(self.engine.root(), profile, installation)?
+                .into_iter()
+                .filter_map(|entry| entry.shortcut.map(|label| (label, entry.extensions)))
+                .collect();
+        Ok(OpenWithDialog::new(record.key.clone(), labels, &current))
+    }
+
+    /// `ProtocolDialog`: libera lo reclamado antes, calcula las filas y abre la sesión.
+    fn protocol_dialog(
+        &mut self,
+        record: &mito_engine::Record,
+        profile: &str,
+        installation: &str,
+    ) -> mito_engine::Result<ProtocolDialog> {
+        let classes = &self.integration.classes;
+        let lines = std::cell::RefCell::new(Vec::new());
+        let log = |line: mito_engine::LogLine| lines.borrow_mut().push(line.message);
+        protocols::unregister(classes, self.engine.root(), &|_| true, &log)?;
+        let rows = protocols::rows(classes, &self.engine, profile, installation)?;
+        let labels: Vec<String> = self
+            .engine
+            .application_entries(record)?
+            .into_iter()
+            .map(|entry| entry.label)
+            .collect();
+        for message in lines.into_inner() {
+            let text = self.tr.tr(&message);
+            self.write_log(text, false);
+        }
+        let session = ThreadedSession::open(
+            std::sync::Arc::clone(&self.engine),
+            self.integration.classes.clone(),
+            profile.to_owned(),
+            installation.to_owned(),
+            self.tr.clone(),
+            self.reports_tx.clone(),
+        );
+        Ok(
+            ProtocolDialog::new(record.key.clone(), labels, rows, Box::new(session))
+                .with_interval(self.protocol_watch),
+        )
+    }
+
     fn component_error(&mut self, error: &mito_engine::Error, operation: &str) {
         self.capture(error, operation);
         let text = describe(error, &self.tr);
@@ -355,4 +530,10 @@ pub(super) enum ComponentDialog {
     Remove,
     /// «Abrir».
     Open,
+    /// «Acc. directo».
+    Shortcut,
+    /// «Extensiones».
+    OpenWith,
+    /// «Protocolos».
+    Protocols,
 }

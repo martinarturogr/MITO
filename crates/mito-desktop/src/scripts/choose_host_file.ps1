@@ -1,0 +1,15 @@
+
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = New-Object System.Text.UTF8Encoding
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Title = 'MITO - Agregar aplicación del host'
+$dialog.Filter = 'Aplicaciones y scripts (*.exe;*.bat;*.cmd;*.ps1)|*.exe;*.bat;*.cmd;*.ps1'
+$dialog.InitialDirectory = [Environment]::GetFolderPath('UserProfile')
+$dialog.CheckFileExists = $true
+$dialog.Multiselect = $false
+try {
+    if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+        ConvertTo-Json -InputObject $dialog.FileName -Compress
+    }
+} finally { $dialog.Dispose() }

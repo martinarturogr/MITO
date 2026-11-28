@@ -17,6 +17,7 @@ use mito_i18n::Translator;
 use super::catalog::CatalogState;
 use super::dialogs::Open;
 use super::home::HomeState;
+use crate::integration::Integration;
 use crate::widgets::{Focus, LogView, Notice, Select, Severity};
 use crate::worker::Report;
 
@@ -107,6 +108,10 @@ pub struct App {
     pub(super) clipboard: Clipboard,
     pub(super) opener: Opener,
     pub(super) identity: bool,
+    /// Lo que la interfaz usa de Windows: escritorio, host, registro y selectores.
+    pub(super) integration: Arc<Integration>,
+    /// Cada cuánto vigila el diálogo de protocolos lo que reclamó.
+    pub(super) protocol_watch: Duration,
     pub(super) initial_profile: Option<String>,
     pub(super) quit: bool,
 }
@@ -148,6 +153,8 @@ impl App {
             clipboard: Box::new(mito_win::clipboard::set_text),
             opener: Box::new(mito_core::persistence::open_location),
             identity: true,
+            integration: Arc::new(Integration::system()),
+            protocol_watch: Duration::from_secs(mito_desktop::protocols::WATCH_SECONDS),
             initial_profile: profile,
             quit: false,
             page: Page::Home,
@@ -173,6 +180,21 @@ impl App {
         opener: impl Fn(&Path) -> mito_core::Result<()> + Send + 'static,
     ) -> Self {
         self.opener = Box::new(opener);
+        self
+    }
+
+    /// Sustituye la integración con Windows (escritorio, `AppData` del host, rama del
+    /// registro y selectores nativos), para pruebas.
+    #[must_use]
+    pub fn with_integration(mut self, integration: Integration) -> Self {
+        self.integration = Arc::new(integration);
+        self
+    }
+
+    /// Cambia cada cuánto vigila el diálogo de protocolos lo reclamado (para pruebas).
+    #[must_use]
+    pub fn with_protocol_watch(mut self, interval: Duration) -> Self {
+        self.protocol_watch = interval;
         self
     }
 

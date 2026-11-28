@@ -363,3 +363,46 @@ fn shell_ejecuta_los_argumentos_en_el_workspace_del_profile() {
     assert_eq!(lines[0], f.path("workspaces/p").display().to_string());
     assert_eq!(lines[1].trim(), "p");
 }
+
+/// `test_shortcuts_without_persist_and_explicit_help` de `test_application_entries.py`.
+#[test]
+fn accesos_sin_persistencia_y_ayuda_explicita() {
+    let f = fx();
+    f.bucket(
+        "test",
+        json!({"editor": {"version": "1", "url": "https://example.org/e.zip", "hash": ZERO_HASH,
+                          "shortcuts": [["help.chm", "Help"], ["Editor.exe", "Editor", "--edit"]]}}),
+    );
+    f.serve(
+        "https://example.org/e.zip",
+        zip_of(&[("help.chm", b""), ("Editor.exe", b"")]),
+    );
+    f.profile("p");
+    f.install(&["test/editor"], Some("p")).unwrap();
+    let editor = f
+        .engine
+        .installed()
+        .unwrap()
+        .get("test/editor")
+        .cloned()
+        .unwrap();
+    assert!(f.engine.can_open(&editor));
+    assert_eq!(
+        f.engine.application_target(&editor, None).unwrap(),
+        ("Editor.exe".to_owned(), vec!["--edit".to_owned()])
+    );
+    assert_eq!(
+        f.engine.application_target(&editor, Some("Help")).unwrap(),
+        ("help.chm".to_owned(), Vec::new())
+    );
+    assert_eq!(
+        f.engine.application_name(&editor, Some("Help")).unwrap(),
+        "Help"
+    );
+    assert_eq!(f.engine.application_entries(&editor).unwrap().len(), 2);
+    assert!(
+        f.engine
+            .application_target(&editor, Some("Missing"))
+            .is_err()
+    );
+}

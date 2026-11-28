@@ -7,7 +7,10 @@ use ratatui::layout::Rect;
 
 use super::layout::Content;
 use super::prompt::{Prompt, PromptButton};
-use super::{Context, Dialog, Outcome, Step, navigate};
+use super::{
+    Context, Dialog, Outcome, Step, drive_select, is_attached, navigate, open_select,
+    process_select,
+};
 use crate::input::Input;
 use crate::theme;
 use crate::widgets::modal::Size;
@@ -17,17 +20,18 @@ const CANCEL: &str = "application-open-cancel";
 const OPEN: &str = "application-open-independent";
 const ENTRY: &str = "application-entry";
 const ARGUMENTS: &str = "application-arguments";
+const PROCESS: &str = "application-process";
 
-/// «Abrir»: nombre del componente, entrada de aplicación (si tiene varias) y
-/// argumentos. En F6 el proceso es siempre independiente (`detached`), así que no hay
-/// selector «Proceso». Se cierra con [`Outcome::Open`] o, al cancelar o con Esc, con
-/// [`Outcome::Closed`].
+/// «Abrir»: nombre del componente, entrada de aplicación (si tiene varias), argumentos y
+/// proceso (`detached` o `attached`, etiquetas literales). Se cierra con
+/// [`Outcome::Open`] o, al cancelar o con Esc, con [`Outcome::Closed`].
 #[derive(Debug)]
 pub struct OpenApplicationDialog {
     prompt: Prompt,
     name: String,
     entry: Option<Select<String>>,
     arguments: TextInput,
+    process: Select<String>,
 }
 
 impl OpenApplicationDialog {
@@ -57,6 +61,7 @@ impl OpenApplicationDialog {
             name: name.into(),
             entry,
             arguments: TextInput::new(ARGUMENTS),
+            process: process_select(PROCESS),
         }
     }
 
@@ -67,11 +72,15 @@ impl OpenApplicationDialog {
                 .entry
                 .as_ref()
                 .and_then(|select| select.value().cloned()),
+            coupled: is_attached(&self.process),
         })
     }
 
-    fn entry_open(&self) -> bool {
-        self.entry.as_ref().is_some_and(|select| select.open)
+    fn selects(&mut self) -> Vec<&mut Select<String>> {
+        self.entry
+            .iter_mut()
+            .chain(std::iter::once(&mut self.process))
+            .collect()
     }
 
     fn on_button(&self, id: &str) -> Option<Step> {
@@ -96,43 +105,36 @@ impl Dialog for OpenApplicationDialog {
         }
         content
             .text(ui.tr.text("Argumentos"), theme::panel())
-            .slot("arguments", 1);
+            .slot("arguments", 1)
+            .gap(1)
+            .text("Proceso", theme::panel())
+            .slot("process", 1);
         let entry = &self.entry;
         let arguments = &self.arguments;
+        let process = &self.process;
         self.prompt
             .render(frame, screen, ui, &mut content, |frame, slots, ui| {
                 if let Some(select) = entry {
                     select.render(frame, slots.get("entry"), ui);
                 }
                 arguments.render(frame, slots.get("arguments"), ui);
+                process.render(frame, slots.get("process"), ui);
             });
         if let Some(select) = &self.entry {
             select.render_overlay(frame, ui);
         }
+        self.process.render_overlay(frame, ui);
     }
 
     fn handle(&mut self, input: &Input, _context: &mut Context) -> Step {
-        // Con la lista del selector abierta, ella recibe las entradas.
-        if self.entry_open() {
-            let hit = match input {
-                Input::Click { column, row } => self.prompt.focus.hit(*column, *row),
-                _ => None,
-            };
-            let closing = input.is_tab()
-                || input.is_back_tab()
-                || (matches!(input, Input::Click { .. }) && hit.as_deref() != Some(ENTRY));
-            if let Some(select) = self.entry.as_mut() {
-                if closing {
-                    select.close();
-                } else {
-                    if let Input::Click { column, row } = input {
-                        select.click(*column, *row);
-                    } else {
-                        select.handle(input);
-                    }
-                    return Step::Stay;
-                }
-            }
+        // Con la lista de un selector abierta, ella recibe las entradas.
+        let mut selects: Vec<&mut Select<String>> = self
+            .entry
+            .iter_mut()
+            .chain(std::iter::once(&mut self.process))
+            .collect();
+        if open_select(&mut selects, &self.prompt.focus, input).is_some() {
+            return Step::Stay;
         }
         if input.is(KeyCode::Esc) {
             return Step::Close(Outcome::Closed);
@@ -147,13 +149,10 @@ impl Dialog for OpenApplicationDialog {
                 return Step::Stay;
             };
             self.prompt.focus.set(&id);
+            if drive_select(&mut self.selects(), &id, input).is_some() {
+                return Step::Stay;
+            }
             return match id.as_str() {
-                ENTRY => {
-                    if let Some(select) = self.entry.as_mut() {
-                        select.click(*column, *row);
-                    }
-                    Step::Stay
-                }
                 ARGUMENTS => {
                     self.arguments.click(*column);
                     Step::Stay
@@ -161,13 +160,12 @@ impl Dialog for OpenApplicationDialog {
                 other => self.on_button(other).unwrap_or(Step::Stay),
             };
         }
+        if let Some(id) = focused.as_deref()
+            && drive_select(&mut self.selects(), id, input).is_some()
+        {
+            return Step::Stay;
+        }
         match focused.as_deref() {
-            Some(ENTRY) => {
-                if let Some(select) = self.entry.as_mut() {
-                    select.handle(input);
-                }
-                Step::Stay
-            }
             Some(ARGUMENTS) => match self.arguments.handle(input) {
                 Some(WidgetEvent::Submitted(_)) => self.open(),
                 _ => Step::Stay,
@@ -209,14 +207,35 @@ mod tests {
     }
 
     #[test]
-    fn el_foco_empieza_en_los_argumentos_y_sin_selector_de_proceso() {
+    fn el_foco_empieza_en_los_argumentos_y_el_proceso_es_detached() {
         let harness = Harness::spanish();
         let mut dialog = OpenApplicationDialog::new("main/tool", vec![]);
         let text = harness.draw(&mut dialog, 80, 24);
         assert_eq!(dialog.focus().focused(), Some(ARGUMENTS));
         assert!(
-            !text.contains("detached") && !text.contains("Proceso"),
+            text.contains("Proceso") && text.contains("detached"),
             "{text}"
+        );
+        assert!(!text.contains("attached"), "{text}");
+    }
+
+    #[test]
+    fn elegir_attached_abre_acoplado() {
+        let mut harness = Harness::new();
+        let mut dialog = OpenApplicationDialog::new("main/tool", vec![]);
+        harness.draw(&mut dialog, 80, 24);
+        harness.focus_on(&mut dialog, PROCESS);
+        harness.press(&mut dialog, KeyCode::Enter);
+        harness.press(&mut dialog, KeyCode::Down);
+        harness.press(&mut dialog, KeyCode::Enter);
+        harness.draw(&mut dialog, 80, 24);
+        assert_eq!(
+            harness.click(&mut dialog, OPEN),
+            Step::Close(Outcome::Open {
+                arguments: vec![],
+                entry: None,
+                coupled: true
+            })
         );
     }
 
@@ -230,7 +249,8 @@ mod tests {
             harness.press(&mut dialog, KeyCode::Enter),
             Step::Close(Outcome::Open {
                 arguments: vec!["run".into(), "two words".into(), "--x".into()],
-                entry: None
+                entry: None,
+                coupled: false
             })
         );
     }
@@ -249,7 +269,8 @@ mod tests {
             harness.click(&mut dialog, OPEN),
             Step::Close(Outcome::Open {
                 arguments: vec![],
-                entry: Some("terminal".into())
+                entry: Some("terminal".into()),
+                coupled: false
             })
         );
     }

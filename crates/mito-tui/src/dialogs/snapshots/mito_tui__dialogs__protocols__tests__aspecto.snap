@@ -1,0 +1,30 @@
+---
+source: crates/mito-tui/src/dialogs/protocols.rs
+expression: "harness.draw(&mut dialog, 100, 34)"
+---
+
+
+
+
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │ Reclamar protocolo                                                                     │
+     │                                                                                        │
+     │ main/claude                                                                            │
+     │                                                                                        │
+     │ claude://  ·  Otra app                                                   [ Reclamar ]  │
+     │ claude.exe                                                                             │
+     │                                                                                        │
+     │                                                                                        │
+     │ Esquema (por ejemplo: claude)                                              [ Añadir ]  │
+     │                                                                                        │
+     │ Pulsa Reclamar: mientras este diálogo esté abierto, los enlaces del esquema, como el   │
+     │ retorno de un inicio de sesión en el navegador, abrirán el componente con el entorno   │
+     │ del profile. MITO lo comprueba cada 5 s y lo recupera si otra app lo sobrescribe. Al   │
+     │ cerrar se restaura el registro anterior.                                               │
+     │                                                                                        │
+     │                                       [ Cerrar ]                                       │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

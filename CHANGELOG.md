@@ -54,3 +54,23 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   si lo extraído coincide). `archives::extract` despacha MSI e Inno con las nuevas opciones
   `innounp` e `inno_root`; el motor restaura los nombres declarados de Inno (`,N`) y
   elige la raíz `{app}` o `{code_X}` desde `extract_dir`.
+- F8 (host): `mito-desktop` con las aplicaciones del host (inventario, descubrimiento en
+  los accesos del menú Inicio y del escritorio leídos con `IShellLinkW`, lanzamiento
+  independiente, `--owned` en un Job y `--coupled`), los enlaces de datos y caché del host
+  hacia `home/AppData` y la exposición inversa con apartado y restauración, los selectores
+  nativos de archivo y carpeta con `localize_script`, y el comando `host-run`.
+- F8 (accesos): `mito-desktop` con los accesos de escritorio de aplicaciones, del host y
+  de la terminal de MITO (`.lnk` nativos con `IShellLinkW`, registros en `core/state`,
+  colisión numerada y reescritura al publicar una versión) e iconos con insignia
+  (algoritmo, colores y caché del original, con Aileron embebida). `mito` pasa a
+  biblioteca con dos binarios, `mito.exe` y `mitow.exe` (sin consola, errores en
+  `logs/mito.log`), `run --owned` con Job Object real, `run --coupled`, `app-shortcut` y
+  `shortcut` (ADR 0013).
+- F8 (TUI): la interfaz de texto activa lo de Windows: «Agregar aplicación del host» (con la
+  lista de hallazgos y el selector nativo), filas del host (Abrir, Cache/Data ✓/✗, Acc.
+  directo, Info y Eliminar), «Acc. directo» de cada aplicación y de «Gestionar profile»
+  (letras y color del icono), «Extensiones ✓/✗» («Abrir con»), «Protocolos» (reclama
+  esquemas y los vigila cada 5 s mientras el diálogo está abierto), «Host · ✓/✗» y el
+  selector «Proceso» de «Abrir» (`attached` lanza acoplado). El escritorio, el `AppData`
+  del host, el registro y los selectores se inyectan (`Integration`) para probar sin tocar
+  el sistema.

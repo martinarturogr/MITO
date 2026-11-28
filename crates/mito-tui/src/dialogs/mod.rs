@@ -8,6 +8,9 @@
 mod component_info;
 mod configuration;
 mod delete_profile;
+mod host_confirm;
+mod host_discover;
+mod host_info;
 mod install_version;
 mod integrity;
 mod layout;
@@ -15,9 +18,13 @@ mod long_step;
 mod manage_profile;
 mod manifest;
 mod open_application;
+mod open_with;
 mod operation;
 mod prompt;
+mod protocols;
 mod remove_component;
+mod remove_host;
+mod shortcut;
 mod unverified;
 
 #[cfg(test)]
@@ -30,19 +37,27 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 
 use crate::input::Input;
-use crate::widgets::{Focus, Notice, Ui, WidgetId};
+use crate::widgets::{Focus, Notice, Select, Ui, WidgetEvent, WidgetId};
+use crate::worker::Pick;
 
 pub use component_info::ComponentInfoDialog;
 pub use configuration::ConfigurationDialog;
 pub use delete_profile::DeleteProfileDialog;
+pub use host_confirm::HostDataConfirm;
+pub use host_discover::HostDiscoverDialog;
+pub use host_info::HostInfoDialog;
 pub use install_version::InstallVersionDialog;
 pub use integrity::DownloadIntegrityDialog;
 pub use long_step::LongStepDialog;
 pub use manage_profile::ManageProfileDialog;
 pub use manifest::ManifestDialog;
 pub use open_application::OpenApplicationDialog;
+pub use open_with::OpenWithDialog;
 pub use operation::{OperationDialog, human_size};
+pub use protocols::{ProtocolBackend, ProtocolDialog, ThreadedSession};
 pub use remove_component::RemoveComponentDialog;
+pub use remove_host::RemoveHostDialog;
+pub use shortcut::{ShortcutChoice, ShortcutDialog};
 pub use unverified::UnverifiedDownloadsDialog;
 
 /// Qué hacer tras procesar una entrada o un tic.
@@ -71,7 +86,15 @@ pub enum Outcome {
         arguments: Vec<String>,
         /// Entrada de aplicación elegida, si el componente tiene varias.
         entry: Option<String>,
+        /// Proceso `attached`: acoplar a una pestaña de la terminal de MITO.
+        coupled: bool,
     },
+    /// «Generar acceso directo»: letras, color y, para aplicaciones, modo y argumentos.
+    Shortcut(ShortcutChoice),
+    /// «Agregar aplicación del host»: el archivo elegido, «Examinar…» o cancelado.
+    HostApplication(Pick),
+    /// «Abrir con»: extensiones de cada entrada de aplicación (vacía = retirar).
+    OpenWith(Vec<(String, Vec<String>)>),
     /// Configuración: `true` si se guardó.
     Saved(bool),
     /// Gestionar profile.
@@ -85,6 +108,8 @@ pub enum ProfileChoice {
     Cancel,
     /// Crear un profile con este nombre (ya sin espacios sobrantes).
     Create(String),
+    /// Generar el acceso directo a MITO del profile (F8).
+    Shortcut,
     /// Abrir la configuración del profile.
     Configuration,
     /// Eliminar el profile.
@@ -154,6 +179,73 @@ pub(crate) fn pressed(focus: &mut Focus, input: &Input) -> Option<WidgetId> {
         _ if input.is_activation() => focus.focused().map(str::to_owned),
         _ => None,
     }
+}
+
+/// Si hay un selector con la lista abierta, le entrega la entrada. Devuelve `Some` (con el
+/// evento que produjo, si lo hubo) cuando la consumió; `None` si ninguno estaba abierto o
+/// la entrada lo cierra (Tab, o un clic fuera de él) y hay que seguir procesándola.
+#[allow(
+    clippy::option_option,
+    reason = "`Some` = la entrada se consumió; el interior, el evento del selector"
+)]
+pub(crate) fn open_select(
+    selects: &mut [&mut Select<String>],
+    focus: &Focus,
+    input: &Input,
+) -> Option<Option<WidgetEvent>> {
+    let select = selects.iter_mut().find(|select| select.open)?;
+    let hit = match input {
+        Input::Click { column, row } => focus.hit(*column, *row),
+        _ => None,
+    };
+    let closing = input.is_tab()
+        || input.is_back_tab()
+        || (matches!(input, Input::Click { .. }) && hit.as_deref() != Some(select.id.as_str()));
+    if closing {
+        select.close();
+        return None;
+    }
+    Some(if let Input::Click { column, row } = input {
+        select.click(*column, *row)
+    } else {
+        select.handle(input)
+    })
+}
+
+/// Entrega la entrada al selector `id` (clic o tecla). `None` si ninguno tiene ese id; si
+/// no, `Some` con el evento que produjo (si lo hubo).
+#[allow(
+    clippy::option_option,
+    reason = "`None` = no hay ese selector; el interior, el evento que produjo"
+)]
+pub(crate) fn drive_select(
+    selects: &mut [&mut Select<String>],
+    id: &str,
+    input: &Input,
+) -> Option<Option<WidgetEvent>> {
+    let select = selects.iter_mut().find(|select| select.id == id)?;
+    Some(if let Input::Click { column, row } = input {
+        select.click(*column, *row)
+    } else {
+        select.handle(input)
+    })
+}
+
+/// Opciones `detached`/`attached` del selector «Proceso» (etiquetas literales).
+pub(crate) fn process_select(id: &str) -> Select<String> {
+    Select::new(
+        id,
+        vec![
+            ("detached".to_owned(), "detached".to_owned()),
+            ("attached".to_owned(), "attached".to_owned()),
+        ],
+        Some(0),
+    )
+}
+
+/// ¿Está elegido `attached` en el selector «Proceso»?
+pub(crate) fn is_attached(select: &Select<String>) -> bool {
+    select.value().is_some_and(|value| value == "attached")
 }
 
 /// Texto de un error del núcleo para el usuario: su mensaje traducido o, si no lo tiene

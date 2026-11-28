@@ -302,12 +302,6 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
     for (args, name) in [
         (vec!["migrate-storage"], "migrate-storage"),
         (vec!["release", "--local"], "release"),
-        (vec!["shortcut", "--profile", "one"], "shortcut"),
-        (
-            vec!["app-shortcut", "extras/tool", "--profile", "one"],
-            "app-shortcut",
-        ),
-        (vec!["host-run", "id", "--profile", "one"], "host-run"),
         (
             vec![
                 "pocketool-run",
@@ -348,6 +342,88 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
             format!("MITO: Comando no disponible todavía: {name}\n")
         );
         assert_eq!(result.out, "");
+    }
+}
+
+/// `app-shortcut` y `shortcut` escriben en el escritorio real, así que aquí solo se
+/// prueban los fallos que ocurren antes de tocarlo.
+#[test]
+fn los_comandos_de_acceso_validan_antes_de_tocar_el_escritorio() {
+    let rig = rig(0, false);
+    for (args, message) in [
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--badge",
+                "ABCDE",
+            ],
+            "MITO: La etiqueta admite de 1 a 4 letras o números\n",
+        ),
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--color",
+                "fucsia",
+            ],
+            "MITO: Elige un color de la paleta del icono\n",
+        ),
+        (
+            vec![
+                "app-shortcut",
+                "extras/tool",
+                "--profile",
+                "one",
+                "--shortcut",
+                "Otra",
+            ],
+            "MITO: Shortcut unavailable or ambiguous: Otra\n",
+        ),
+        (
+            vec!["app-shortcut", "extras/otra", "--profile", "one"],
+            "MITO: El componente debe estar activo en el profile\n",
+        ),
+        (
+            vec!["shortcut", "--profile", "one", "--color", "fucsia"],
+            "MITO: Elige un color de la paleta del icono\n",
+        ),
+        (
+            vec!["shortcut", "--profile", "one", "--badge", "A B"],
+            "MITO: La etiqueta admite de 1 a 4 letras o números\n",
+        ),
+    ] {
+        let result = cli(&rig, &args, "");
+        assert_eq!(result.code, 1, "{args:?}");
+        assert_eq!(result.err, message, "{args:?}");
+        assert_eq!(result.out, "");
+    }
+    assert!(
+        !rig.engine
+            .layout()
+            .state()
+            .join("application-shortcuts")
+            .exists()
+    );
+}
+
+#[test]
+fn los_comandos_de_acceso_se_ejecutan_dentro_del_lock_de_mutacion() {
+    let rig = rig(0, false);
+    let _held =
+        mito_core::MutationLock::mutation(rig.engine.layout(), std::time::Duration::ZERO).unwrap();
+    for args in [
+        vec!["app-shortcut", "extras/tool", "--profile", "one"],
+        vec!["shortcut", "--profile", "one"],
+    ] {
+        let result = cli(&rig, &args, "");
+        assert_eq!(result.code, 1, "{args:?}");
+        assert!(result.err.starts_with("MITO: "), "{}", result.err);
+        assert!(!result.err.contains("escritorio"), "{}", result.err);
     }
 }
 
@@ -464,4 +540,58 @@ fn las_demas_ordenes_no_se_bloquean_aunque_la_raiz_sea_larga() {
             result.err
         );
     }
+}
+
+/// Registra un `exit.cmd` (sale con su primer argumento) como aplicación del host.
+fn host_script(rig: &Rig) -> String {
+    let script = rig.engine.root().join("exit.cmd");
+    fs::write(&script, "@echo off\r\nexit /b %~1\r\n").unwrap();
+    mito_desktop::host_apps::add(rig.engine.root(), &script).unwrap()
+}
+
+#[test]
+fn host_run_owned_reenvia_los_argumentos_devuelve_el_codigo_y_pausa() {
+    let rig = rig(0, false);
+    let id = host_script(&rig);
+    let result = cli(
+        &rig,
+        &["host-run", &id, "--profile", "one", "--owned", "--", "7"],
+        "",
+    );
+    assert_eq!(result.code, 7, "{}", result.err);
+    assert_eq!(
+        result.out,
+        format!("La aplicación terminó con el código 7.\n{OWNED_PAUSE}")
+    );
+}
+
+#[test]
+fn host_run_con_una_identidad_desconocida_falla_y_con_owned_pausa() {
+    let rig = rig(0, false);
+    let result = cli(&rig, &["host-run", "nope", "--profile", "one"], "");
+    assert_eq!(result.code, 1);
+    assert_eq!(
+        result.err,
+        "MITO: La aplicación del host ya no está registrada en MITO\n"
+    );
+    assert_eq!(result.out, "");
+    let owned = cli(
+        &rig,
+        &["host-run", "nope", "--profile", "one", "--owned"],
+        "",
+    );
+    assert_eq!(owned.code, 1);
+    assert_eq!(
+        owned.out,
+        format!("La aplicación terminó con el código 1.\n{OWNED_PAUSE}")
+    );
+}
+
+#[test]
+fn host_run_con_un_profile_inexistente_falla() {
+    let rig = rig(0, false);
+    let id = host_script(&rig);
+    let result = cli(&rig, &["host-run", &id, "--profile", "missing"], "");
+    assert_eq!(result.code, 1);
+    assert!(result.err.starts_with("MITO: "), "{}", result.err);
 }

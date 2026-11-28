@@ -6,7 +6,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use mito_core::{Message, Operation};
-use mito_engine::{Downloader, Engine, Extensions, InstallOptions};
+use mito_engine::{Downloader, Engine, Extensions, InstallOptions, Jobs};
 use serde_json::{Value, json};
 
 /// Hash declarado de los manifiestos de prueba (el descargador falso no lo comprueba).
@@ -90,15 +90,27 @@ pub(crate) struct Fx {
 }
 
 pub(crate) fn fx() -> Fx {
+    fx_with(None)
+}
+
+/// Como [`fx`], con unos `Jobs` falsos para los lanzamientos `--coupled`.
+pub(crate) fn fx_with(jobs: Option<Box<dyn Jobs>>) -> Fx {
     let dir = tempfile::tempdir().unwrap();
     let source = tempfile::tempdir().unwrap();
     let fake = Fake::default();
-    let extensions = Extensions {
+    let mut extensions = Extensions {
         downloader: Box::new(fake.clone()),
         ..Extensions::default()
     };
+    if let Some(jobs) = jobs {
+        extensions.jobs = jobs;
+    }
     let engine = Engine::with_extensions(dir.path(), extensions);
     engine.initialize().unwrap();
+    // El icono de MITO que usan los accesos directos.
+    let icon = engine.layout().branding_icon();
+    fs::create_dir_all(icon.parent().unwrap()).unwrap();
+    fs::write(icon, include_bytes!("../../../../assets/branding/mito.ico")).unwrap();
     Fx {
         _dir: dir,
         source,

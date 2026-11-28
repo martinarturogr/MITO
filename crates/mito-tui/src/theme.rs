@@ -20,6 +20,10 @@ pub const DETAILS: Color = Color::from_u32(0x001b_3b2e);
 pub const ROW_DARK: Color = Color::from_u32(0x001b_3b2e);
 /// Fila clara de las listas (`.component-row-light`).
 pub const ROW_LIGHT: Color = Color::from_u32(0x0029_513d);
+/// Fila oscura de una aplicación del host (`.host-component` sobre la fila oscura).
+pub const HOST_DARK: Color = Color::from_u32(0x0059_3300);
+/// Fila clara de una aplicación del host (`.host-component` sobre la fila clara).
+pub const HOST_LIGHT: Color = Color::from_u32(0x008f_5000);
 /// Texto de resumen (`.summary`).
 pub const SUMMARY: Color = Color::from_u32(0x0095_a9bd);
 /// Borde superior del panel de log (`#log-panel`).

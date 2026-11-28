@@ -1,0 +1,35 @@
+---
+source: crates/mito-tui/src/dialogs/open_with.rs
+expression: "harness.draw(&mut dialog, 90, 36)"
+---
+
+
+
+
+       ╭──────────────────────────────────────────────────────────────────────────╮
+       │ Abrir con                                                                │
+       │                                                                          │
+       │ main/foliate                                                             │
+       │                                                                          │
+       │ Extensiones registradas                                                  │
+       │ .docx                                                                    │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │                                                                          │
+       │ Presets                            ▼ Habituales                        ▼ │
+       │                                                                          │
+       │ Extensiones (por ejemplo: pdf epub)                                      │
+       │                                                                          │
+       │              [ Añadir ]                          [ Quitar ]              │
+       │                                                                          │
+       │ Aparecerá en «Abrir con» del menú contextual de esos archivos y se       │
+       │ abrirá con el entorno del profile. No cambia la aplicación               │
+       │ predeterminada.                                                          │
+       │                                                                          │
+       │             [ Cancelar ]                         [ Guardar ]             │
+       ╰──────────────────────────────────────────────────────────────────────────╯

@@ -15,6 +15,7 @@ use anyhow::Context as _;
 use mito_core::diagnostics::{self, LogLevel};
 use mito_core::error_tracking::{self, Options};
 use mito_core::{Layout, MutationLock, Operation};
+use mito_desktop::host::DesktopHost;
 use mito_engine::{
     DownloaderFetcher, Engine, ExpandKind, Extensions, InstallOptions, LaunchOptions,
     PowerShellHooks, ShellKind,
@@ -25,6 +26,9 @@ use crate::bootstrap;
 use crate::cli::{BucketCommand, Cli, Command, HookExpand, ProfileCommand, ShellType};
 use crate::console::Console;
 use crate::doctor;
+use crate::host_run;
+use crate::jobs::ProcessJobs;
+use crate::shortcuts;
 
 /// Código de salida de un error de dominio.
 const FAILURE: i32 = 1;
@@ -58,6 +62,8 @@ fn extensions(root: &std::path::Path) -> Extensions {
     Extensions {
         hooks: Box::new(PowerShellHooks::new(Layout::new(root).mito_exe())),
         terminal: Box::new(PrivateTerminal),
+        host: Box::new(DesktopHost::default()),
+        jobs: Box::new(ProcessJobs),
         ..Extensions::default()
     }
 }
@@ -84,11 +90,8 @@ fn unavailable(command: &Command) -> Option<String> {
         Command::Profile(ProfileCommand::Export { .. }) => "profile export",
         Command::Profile(ProfileCommand::Import { .. }) => "profile import",
         Command::PocketoolRun(_)
-        | Command::HostRun(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
-        | Command::AppShortcut(_)
-        | Command::Shortcut { .. }
         | Command::Release(_) => command.name(),
         _ => return None,
     };
@@ -387,14 +390,20 @@ fn execute(
             mito_terminal::launch(engine, Some(profile), shell, None)?;
         }
         Command::Ui { profile } => return ui(engine, profile.as_deref()),
+        Command::HostRun(host) => return host_run::run(engine, host),
+        Command::AppShortcut(args) => shortcuts::app_shortcut(engine, args, console)?,
+        Command::Shortcut {
+            profile,
+            badge,
+            color,
+        } => {
+            shortcuts::mito_shortcut(engine, profile, badge.as_deref(), color.as_deref(), console)?;
+        }
         Command::Logs
         | Command::PocketoolRun(_)
-        | Command::HostRun(_)
         | Command::HookExpand(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
-        | Command::AppShortcut(_)
-        | Command::Shortcut { .. }
         | Command::Release(_) => {
             anyhow::bail!("Comando no disponible todavía: {}", command.name());
         }

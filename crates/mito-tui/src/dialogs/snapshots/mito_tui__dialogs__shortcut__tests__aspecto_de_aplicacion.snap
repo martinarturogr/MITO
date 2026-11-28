@@ -1,0 +1,31 @@
+---
+source: crates/mito-tui/src/dialogs/shortcut.rs
+expression: "harness.draw(&mut dialog, 80, 34)"
+---
+
+
+
+
+
+
+
+             ╭────────────────────────────────────────────────────╮
+             │ Generar acceso directo                             │
+             │                                                    │
+             │ Tool                                             ▼ │
+             │                                                    │
+             │ Argumentos                                         │
+             │                                                    │
+             │                                                    │
+             │ Proceso                                            │
+             │ detached                                         ▼ │
+             │                                                    │
+             │ Letras del icono (máximo 4)                        │
+             │ MITO                                               │
+             │                                                    │
+             │ Color del fondo                                    │
+             │     Negro        Rojo       ✓ Azul       Naranja   │
+             │     Rosa         Verde      Marron       Morado    │
+             │                                                    │
+             │       [ Cancelar ]               [ Generar ]       │
+             ╰────────────────────────────────────────────────────╯
