@@ -25,6 +25,7 @@ use crate::bootstrap;
 use crate::cli::{BucketCommand, Cli, Command, HookExpand, ProfileCommand, ShellType};
 use crate::console::Console;
 use crate::doctor;
+use crate::host_run;
 
 /// Código de salida de un error de dominio.
 const FAILURE: i32 = 1;
@@ -84,7 +85,6 @@ fn unavailable(command: &Command) -> Option<String> {
         Command::Profile(ProfileCommand::Export { .. }) => "profile export",
         Command::Profile(ProfileCommand::Import { .. }) => "profile import",
         Command::PocketoolRun(_)
-        | Command::HostRun(_)
         | Command::McpServer(_)
         | Command::MigrateStorage
         | Command::AppShortcut(_)
@@ -387,9 +387,9 @@ fn execute(
             mito_terminal::launch(engine, Some(profile), shell, None)?;
         }
         Command::Ui { profile } => return ui(engine, profile.as_deref()),
+        Command::HostRun(host) => return host_run::run(engine, host),
         Command::Logs
         | Command::PocketoolRun(_)
-        | Command::HostRun(_)
         | Command::HookExpand(_)
         | Command::McpServer(_)
         | Command::MigrateStorage

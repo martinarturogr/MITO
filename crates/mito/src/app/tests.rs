@@ -307,7 +307,6 @@ fn los_comandos_de_otras_fases_no_estan_disponibles() {
             vec!["app-shortcut", "extras/tool", "--profile", "one"],
             "app-shortcut",
         ),
-        (vec!["host-run", "id", "--profile", "one"], "host-run"),
         (
             vec![
                 "pocketool-run",
@@ -464,4 +463,58 @@ fn las_demas_ordenes_no_se_bloquean_aunque_la_raiz_sea_larga() {
             result.err
         );
     }
+}
+
+/// Registra un `exit.cmd` (sale con su primer argumento) como aplicación del host.
+fn host_script(rig: &Rig) -> String {
+    let script = rig.engine.root().join("exit.cmd");
+    fs::write(&script, "@echo off\r\nexit /b %~1\r\n").unwrap();
+    mito_desktop::host_apps::add(rig.engine.root(), &script).unwrap()
+}
+
+#[test]
+fn host_run_owned_reenvia_los_argumentos_devuelve_el_codigo_y_pausa() {
+    let rig = rig(0, false);
+    let id = host_script(&rig);
+    let result = cli(
+        &rig,
+        &["host-run", &id, "--profile", "one", "--owned", "--", "7"],
+        "",
+    );
+    assert_eq!(result.code, 7, "{}", result.err);
+    assert_eq!(
+        result.out,
+        format!("La aplicación terminó con el código 7.\n{OWNED_PAUSE}")
+    );
+}
+
+#[test]
+fn host_run_con_una_identidad_desconocida_falla_y_con_owned_pausa() {
+    let rig = rig(0, false);
+    let result = cli(&rig, &["host-run", "nope", "--profile", "one"], "");
+    assert_eq!(result.code, 1);
+    assert_eq!(
+        result.err,
+        "MITO: La aplicación del host ya no está registrada en MITO\n"
+    );
+    assert_eq!(result.out, "");
+    let owned = cli(
+        &rig,
+        &["host-run", "nope", "--profile", "one", "--owned"],
+        "",
+    );
+    assert_eq!(owned.code, 1);
+    assert_eq!(
+        owned.out,
+        format!("La aplicación terminó con el código 1.\n{OWNED_PAUSE}")
+    );
+}
+
+#[test]
+fn host_run_con_un_profile_inexistente_falla() {
+    let rig = rig(0, false);
+    let id = host_script(&rig);
+    let result = cli(&rig, &["host-run", &id, "--profile", "missing"], "");
+    assert_eq!(result.code, 1);
+    assert!(result.err.starts_with("MITO: "), "{}", result.err);
 }

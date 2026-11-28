@@ -54,3 +54,8 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   si lo extraído coincide). `archives::extract` despacha MSI e Inno con las nuevas opciones
   `innounp` e `inno_root`; el motor restaura los nombres declarados de Inno (`,N`) y
   elige la raíz `{app}` o `{code_X}` desde `extract_dir`.
+- F8 (host): `mito-desktop` con las aplicaciones del host (inventario, descubrimiento en
+  los accesos del menú Inicio y del escritorio leídos con `IShellLinkW`, lanzamiento
+  independiente, `--owned` en un Job y `--coupled`), los enlaces de datos y caché del host
+  hacia `home/AppData` y la exposición inversa con apartado y restauración, los selectores
+  nativos de archivo y carpeta con `localize_script`, y el comando `host-run`.

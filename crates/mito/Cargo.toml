@@ -14,6 +14,7 @@ clap.workspace = true
 ctrlc.workspace = true
 mito-catalog.workspace = true
 mito-core.workspace = true
+mito-desktop.workspace = true
 mito-i18n.workspace = true
 mito-engine.workspace = true
 mito-terminal.workspace = true
