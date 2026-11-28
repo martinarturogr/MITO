@@ -54,3 +54,10 @@ el proyecto sigue [SemVer](https://semver.org/lang/es/).
   si lo extraído coincide). `archives::extract` despacha MSI e Inno con las nuevas opciones
   `innounp` e `inno_root`; el motor restaura los nombres declarados de Inno (`,N`) y
   elige la raíz `{app}` o `{code_X}` desde `extract_dir`.
+- F8 (accesos): `mito-desktop` con los accesos de escritorio de aplicaciones, del host y
+  de la terminal de MITO (`.lnk` nativos con `IShellLinkW`, registros en `core/state`,
+  colisión numerada y reescritura al publicar una versión) e iconos con insignia
+  (algoritmo, colores y caché del original, con Aileron embebida). `mito` pasa a
+  biblioteca con dos binarios, `mito.exe` y `mitow.exe` (sin consola, errores en
+  `logs/mito.log`), `run --owned` con Job Object real, `run --coupled`, `app-shortcut` y
+  `shortcut` (ADR 0013).
