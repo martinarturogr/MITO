@@ -17,3 +17,4 @@ sustituye por otro nuevo que lo indique.
 | [0010](0010-bootstrap-en-mito-exe.md) | Bootstrap dentro de mito.exe | Aceptado |
 | [0011](0011-tui-con-ratatui.md) | Interfaz de texto con ratatui | Aceptado |
 | [0012](0012-hooks-vuelven-a-mito-exe.md) | Los hooks vuelven a mito.exe para extraer | Aceptado |
+| [0013](0013-lanzador-sin-consola-e-integracion-windows.md) | Lanzador sin consola e integración con Windows | Aceptado |

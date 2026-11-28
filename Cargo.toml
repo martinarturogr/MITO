@@ -20,10 +20,12 @@ mito-transfer = { path = "crates/mito-transfer" }
 mito-catalog = { path = "crates/mito-catalog" }
 mito-engine = { path = "crates/mito-engine" }
 mito-terminal = { path = "crates/mito-terminal" }
+mito-desktop = { path = "crates/mito-desktop" }
 mito-tui = { path = "crates/mito-tui" }
 mito-mcp = { path = "crates/mito-mcp" }
 
 # Externos
+ab_glyph = "0.2.32"
 anyhow = "1.0.105"
 caseless = "0.2.2"
 jiff = "1.0.3"
@@ -32,6 +34,7 @@ crossterm = "0.29.0"
 ctrlc = "3.5.3"
 dunce = "1.0.5"
 junction = "2.1.0"
+png = "0.18.1"
 ratatui = "0.30.2"
 regex = "1.13.2"
 serde = { version = "1.0.229", features = ["derive"] }
