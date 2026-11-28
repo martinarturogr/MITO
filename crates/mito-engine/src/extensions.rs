@@ -13,7 +13,7 @@
 //! | [`Pocketools`] | F10 | lista vacía |
 //! | [`Jobs`] (`--coupled`, `--owned`) | F8 | «no soportado todavía» |
 //! | [`Extensions::sevenzip`] | F5 | `core/tools/7zip/7z.exe` si existe |
-//! | [`Network`] (proxy) | F9 | no-op |
+//! | [`Network`] (proxy) | F9 | [`crate::network::ConfigNetwork`]: `config.properties` en cada llamada |
 
 use std::collections::BTreeMap;
 use std::io;
@@ -219,7 +219,8 @@ pub trait Network: Send + Sync {
     fn proxy_environment(&self, layout: &Layout, env: &mut Env) -> Result<()>;
 }
 
-/// Sin proxy: el entorno heredado no se toca.
+/// Sin proxy: el entorno heredado no se toca. Ya no es el valor por defecto (lo es
+/// [`crate::network::ConfigNetwork`]); sirve a las pruebas que no quieren leer la configuración.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct NoNetwork;
 
@@ -300,7 +301,7 @@ impl Default for Extensions {
             terminal: Box::new(NoTerminal),
             host: Box::new(NoHost),
             pocketools: Box::new(NoPocketools),
-            network: Box::new(NoNetwork),
+            network: Box::new(crate::network::ConfigNetwork),
             jobs: Box::new(NoJobs),
             sevenzip: None,
             fault: None,

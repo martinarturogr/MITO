@@ -27,6 +27,7 @@ pub mod install;
 pub mod inventory;
 pub mod isolation;
 pub mod launch;
+pub mod network;
 pub mod profiles;
 mod publish;
 pub mod record;
@@ -46,6 +47,10 @@ pub use extensions::{
 pub use hooks::{ExpandKind, PowerShellHooks, hook_expand};
 pub use install::{InstallOptions, MoveOutcome, Plan, move_whole};
 pub use launch::{LaunchCommand, LaunchOptions, ShellKind};
+pub use network::{
+    ConfigNetwork, Connectivity, Credentials, Diagnosis, DiagnosisKind, NetworkConfig, apply,
+    diagnose, intercept, poll_interval, proxy_environment,
+};
 pub use profiles::Profile;
 pub use record::{Record, Records};
 pub use resources::prepare_resources;
