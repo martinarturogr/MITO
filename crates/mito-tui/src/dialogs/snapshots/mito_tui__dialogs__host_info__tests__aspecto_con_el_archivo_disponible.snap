@@ -1,0 +1,23 @@
+---
+source: crates/mito-tui/src/dialogs/host_info.rs
+expression: "harness.draw(&mut dialog, 100, 24)"
+---
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │                                                                                        │
+     │                                    HOST APPLICATION                               ×    │
+     │                                                                                        │
+     │   Foo.exe                                                                              │
+     │   C:\Apps\Foo\Foo.exe                                                                  │
+     │   Runs with the selected MITO profile environment, including APPDATA.                  │
+     │                                                                                        │
+     │   Executable folder                                                                    │
+     │   C:\Apps\Foo                                                              [ Open ]    │
+     │                                                                                        │
+     │                                                                                        │
+     │   The file is no longer available.                                                     │
+     │                                                                                        │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

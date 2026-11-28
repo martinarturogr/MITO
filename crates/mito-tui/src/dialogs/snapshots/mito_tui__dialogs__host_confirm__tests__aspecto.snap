@@ -1,0 +1,20 @@
+---
+source: crates/mito-tui/src/dialogs/host_confirm.rs
+expression: "harness.draw(&mut dialog, 100, 24)"
+---
+
+
+
+
+
+
+
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │ Host data: ¿crear un enlace?                                                           │
+     │ Host: C:\Users\a\AppData\Roaming\Foo                                                   │
+     │ MITO: C:\mito\home\AppData\Roaming\Foo                                                 │
+     │ Compartido por todos los profiles.                                                     │
+     │                                                                                        │
+     │                [ Cancelar ]                                 [ Enlazar ]                │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

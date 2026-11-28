@@ -180,12 +180,19 @@ impl App {
             (Purpose::Remove(installation), Outcome::Confirmed(true)) => {
                 self.request(Action::RemoveComponent(installation));
             }
-            (Purpose::OpenApplication(installation), Outcome::Open { arguments, entry }) => {
+            (
+                Purpose::OpenApplication(installation),
+                Outcome::Open {
+                    arguments,
+                    entry,
+                    coupled,
+                },
+            ) => {
                 self.request(Action::Launch {
                     installation,
                     arguments,
                     shortcut: entry,
-                    coupled: false,
+                    coupled,
                 });
             }
             (Purpose::Configuration(profile), Outcome::Saved(true)) => {

@@ -1,0 +1,32 @@
+---
+source: crates/mito-tui/src/dialogs/host_discover.rs
+expression: "harness.draw(&mut dialog, 100, 30)"
+---
+
+     ╭────────────────────────────────────────────────────────────────────────────────────────╮
+     │                                                                                        │
+     │                               AGREGAR APLICACIÓN DEL HOST                         ×    │
+     │                                                                                        │
+     │   Aplicaciones encontradas en el menú Inicio y el escritorio del host. Si falta        │
+     │   alguna, usa Examinar.                                                                │
+     │                                                                                        │
+     │   Filtrar…                                                                             │
+     │                                                                                        │
+     │   Editor  ·  C:\Tools\Editor.exe                                                       │
+     │   Viewer  ·  C:\Tools\Viewer.exe                                                       │
+     │   Run  ·  C:\Tools\Run.cmd                                                             │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │                                                                                        │
+     │          [ Examinar… ]               [ Cancelar ]                [ Agregar ]           │
+     │                                                                                        │
+     ╰────────────────────────────────────────────────────────────────────────────────────────╯

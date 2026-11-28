@@ -18,6 +18,7 @@ mito-engine.workspace = true
 mito-terminal.workspace = true
 mito-desktop.workspace = true
 crossterm.workspace = true
+jiff.workspace = true
 ratatui.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

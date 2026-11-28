@@ -7,8 +7,6 @@ expression: "harness.draw(&mut dialog, 80, 24)"
 
 
 
-
-
          ╭────────────────────────────────────────────────────────────╮
          │ Open                                                       │
          │                                                            │
@@ -16,6 +14,9 @@ expression: "harness.draw(&mut dialog, 80, 24)"
          │                                                            │
          │ Arguments                                                  │
          │                                                            │
+         │                                                            │
+         │ Proceso                                                    │
+         │ detached                                                 ▼ │
          │                                                            │
          │          [ Cancel ]                     [ Open ]           │
          ╰────────────────────────────────────────────────────────────╯

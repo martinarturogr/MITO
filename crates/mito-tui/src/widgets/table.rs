@@ -67,6 +67,8 @@ pub struct Table {
     pub offset: usize,
     /// Una tabla deshabilitada no se registra.
     pub disabled: bool,
+    /// Dibuja la fila de títulos (por defecto sí).
+    pub header: bool,
     height: Cell<usize>,
     body: Cell<Rect>,
 }
@@ -81,6 +83,7 @@ impl Table {
             cursor: 0,
             offset: 0,
             disabled: false,
+            header: true,
             height: Cell::new(10),
             body: Cell::new(Rect::ZERO),
         }
@@ -169,12 +172,13 @@ impl Table {
 
     /// Dibuja la cabecera y las filas visibles en `area` y registra la zona.
     pub fn render(&self, frame: &mut Frame, area: Rect, ui: &mut Ui) {
-        if area.height < 2 {
+        let titles = u16::from(self.header);
+        if area.height <= titles {
             return;
         }
         let focused = !self.disabled && ui.is_focused(&self.id);
-        let header = Rect::new(area.x, area.y, area.width, 1);
-        let body = Rect::new(area.x, area.y + 1, area.width, area.height - 1);
+        let header = Rect::new(area.x, area.y, area.width, titles);
+        let body = Rect::new(area.x, area.y + titles, area.width, area.height - titles);
         self.body.set(body);
         self.height.set(usize::from(body.height));
         let constraints: Vec<Constraint> = self.columns.iter().map(|c| c.width).collect();
