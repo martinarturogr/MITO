@@ -161,15 +161,21 @@ fn find_links(folder: &Path, found: &mut Vec<PathBuf>) {
     let Ok(listing) = fs::read_dir(folder) else {
         return;
     };
-    let mut paths: Vec<PathBuf> = listing
+    // El tipo sale de la propia entrada (sin otra consulta al disco) y los enlaces y
+    // junctions no se siguen, como `rglob` de Python: el escritorio puede contener
+    // árboles enormes o bucles.
+    let mut entries: Vec<(PathBuf, fs::FileType)> = listing
         .filter_map(std::result::Result::ok)
-        .map(|entry| entry.path())
+        .filter_map(|entry| Some((entry.path(), entry.file_type().ok()?)))
         .collect();
-    paths.sort_by_key(|p| fold(&p.display().to_string()));
-    for path in paths {
-        if path.is_dir() {
+    entries.sort_by_key(|(path, _)| fold(&path.display().to_string()));
+    for (path, kind) in entries {
+        if kind.is_symlink() {
+            continue;
+        }
+        if kind.is_dir() {
             find_links(&path, found);
-        } else if path.is_file() && extension(&path).is_some_and(|e| e == "lnk") {
+        } else if kind.is_file() && extension(&path).is_some_and(|e| e == "lnk") {
             found.push(path);
         }
     }

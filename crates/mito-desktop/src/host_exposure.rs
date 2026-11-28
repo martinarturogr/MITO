@@ -161,8 +161,8 @@ pub fn candidates(engine: &Engine, record: &Record) -> Result<Vec<(Kind, String)
 
 fn walk(base: &Path, dir: &Path, names: &[String], kind: Kind, found: &mut Vec<(Kind, String)>) {
     let mut descend = Vec::new();
-    for (name, path) in subfolders(dir) {
-        if is_link(&path) {
+    for crate::host_data::Folder { name, path, link } in subfolders(dir) {
+        if link {
             continue;
         }
         if names.iter().any(|word| fold(&name).contains(word.as_str())) {

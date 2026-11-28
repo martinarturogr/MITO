@@ -437,3 +437,16 @@ fn las_carpetas_de_accesos_se_leen_del_shell() {
     assert_ne!(folders, Vec::<PathBuf>::new());
     assert!(folders.iter().all(|f| f.is_absolute()));
 }
+
+#[test]
+fn discover_no_sigue_junctions_ni_se_queda_en_bucles() {
+    let mut menu = menu();
+    let editor = menu.rig.folder.join("editor.exe");
+    fs::write(&editor, b"MZ").unwrap();
+    menu.shortcut("Editor", &editor);
+    // Un junction que apunta a su propia carpeta padre: seguirlo no terminaría nunca.
+    mito_win::links::create_junction(&menu.start, &menu.start.join("Tools").join("loop")).unwrap();
+    let found = menu.found();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].0, "Editor");
+}

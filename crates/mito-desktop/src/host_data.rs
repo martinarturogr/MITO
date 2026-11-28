@@ -186,20 +186,40 @@ pub(crate) fn stem(path: &Path) -> String {
 }
 
 /// Subcarpetas inmediatas de `dir`, ordenadas por nombre sin mayúsculas.
-pub(crate) fn subfolders(dir: &Path) -> Vec<(String, PathBuf)> {
+pub(crate) fn subfolders(dir: &Path) -> Vec<Folder> {
     let Ok(listing) = fs::read_dir(dir) else {
         return Vec::new();
     };
-    let mut names: Vec<(String, PathBuf)> = listing
+    // El tipo sale de la propia entrada, sin otra consulta al disco: AppData puede
+    // tener cientos de miles de archivos. En Windows, `is_symlink` también es cierto
+    // para los junctions; solo esos casos, raros, se comprueban aparte.
+    let mut folders: Vec<Folder> = listing
         .filter_map(std::result::Result::ok)
         .filter_map(|entry| {
+            let kind = entry.file_type().ok()?;
             let path = entry.path();
-            (path.is_dir() || mito_win::links::is_junction(&path))
-                .then(|| (entry.file_name().to_string_lossy().into_owned(), path))
+            let link = kind.is_symlink();
+            let folder =
+                kind.is_dir() || (link && (mito_win::links::is_junction(&path) || path.is_dir()));
+            folder.then(|| Folder {
+                name: entry.file_name().to_string_lossy().into_owned(),
+                path,
+                link,
+            })
         })
         .collect();
-    names.sort_by_key(|(name, _)| fold(name));
-    names
+    folders.sort_by_key(|folder| fold(&folder.name));
+    folders
+}
+
+/// Subcarpeta de [`subfolders`].
+pub(crate) struct Folder {
+    /// Nombre de la entrada.
+    pub(crate) name: String,
+    /// Ruta completa.
+    pub(crate) path: PathBuf,
+    /// Es un junction o un enlace simbólico (no se recorre).
+    pub(crate) link: bool,
 }
 
 /// Un enlace de cualquier tipo (junction o enlace simbólico).
@@ -380,8 +400,8 @@ pub fn candidates(
 
 fn walk_candidates(dir: &Path, word: &str, executable: &Path, found: &mut Vec<PathBuf>) {
     let mut descend = Vec::new();
-    for (name, path) in subfolders(dir) {
-        if is_link(&path) {
+    for Folder { name, path, link } in subfolders(dir) {
+        if link {
             continue;
         }
         if fold(&name).contains(word) {
@@ -422,11 +442,11 @@ pub fn entries(root: &Path, host: &HostRoots, identity: &str, kind: Kind) -> Res
     let mut pending = vec![base.clone()];
     while let Some(dir) = pending.pop() {
         let mut descend = Vec::new();
-        for (_, path) in subfolders(&dir) {
+        for Folder { path, link, .. } in subfolders(&dir) {
             let Some(relative) = relative_to(&path, &base).map(|r| r.display().to_string()) else {
                 continue;
             };
-            if mito_win::links::is_junction(&path) {
+            if link && mito_win::links::is_junction(&path) {
                 let named = Path::new(&relative)
                     .components()
                     .any(|part| fold(&part.as_os_str().to_string_lossy()).contains(&word));
@@ -443,7 +463,7 @@ pub fn entries(root: &Path, host: &HostRoots, identity: &str, kind: Kind) -> Res
                         });
                     }
                 }
-            } else if !mito_win::links::is_symlink(&path) {
+            } else if !link {
                 descend.push(path);
             }
         }

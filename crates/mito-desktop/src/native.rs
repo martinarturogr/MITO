@@ -33,6 +33,17 @@ fn folder_script() -> String {
     include_str!("scripts/choose_host_folder.ps1").replace("\r\n", "\n")
 }
 
+/// Texto de [`NativeError::Failed`]: el código (o `?`) y `stderr` si lo hay.
+fn failed_text(code: Option<i32>, stderr: &str) -> String {
+    let code = code.map_or_else(|| "?".to_owned(), |code| code.to_string());
+    let stderr = stderr.trim();
+    if stderr.is_empty() {
+        format!("PowerShell terminó con el código {code}")
+    } else {
+        format!("PowerShell terminó con el código {code}: {stderr}")
+    }
+}
+
 /// Errores de los selectores nativos.
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -41,7 +52,7 @@ pub enum NativeError {
     #[error("{0}")]
     Io(#[from] io::Error),
     /// PowerShell terminó con error (`CalledProcessError` del original).
-    #[error("PowerShell terminó con el código {code:?}: {stderr}")]
+    #[error("{}", failed_text(*.code, .stderr))]
     Failed {
         /// Código de salida, si lo hubo.
         code: Option<i32>,
@@ -230,5 +241,27 @@ mod tests {
     fn una_traduccion_con_comillas_no_rompe_el_literal() {
         let script = choose_folder_script(&|_| "Carpeta de 'Ana'; calc".to_owned());
         assert!(script.contains("$dialog.Description = 'Carpeta de ''Ana''; calc'"));
+    }
+}
+
+#[cfg(test)]
+mod failure_text_tests {
+    use super::*;
+
+    #[test]
+    fn el_fallo_de_powershell_muestra_el_codigo_sin_option() {
+        let error = NativeError::Failed {
+            code: Some(-1),
+            stderr: String::new(),
+        };
+        assert_eq!(error.to_string(), "PowerShell terminó con el código -1");
+        let error = NativeError::Failed {
+            code: None,
+            stderr: " sin permiso \n".to_owned(),
+        };
+        assert_eq!(
+            error.to_string(),
+            "PowerShell terminó con el código ?: sin permiso"
+        );
     }
 }
