@@ -1,6 +1,6 @@
 //! Entradas «Abrir con» de Windows por componente (`open_with.py`).
 //!
-//! Cada registro crea un ProgID propio por profile, componente y acceso directo
+//! Cada registro crea un `ProgID` propio por profile, componente y acceso directo
 //! (`HKCU\Software\Classes\MITO.<16 hex>`) cuyo comando es el mismo lanzador que los
 //! accesos directos (`mitow.exe run --profile --app`, ADR 0013), de modo que se aplican
 //! el entorno del profile, el workspace y las copias por profile. Las extensiones las
@@ -10,6 +10,7 @@
 //! Todas las operaciones de registro trabajan bajo una [`Classes`], que decide qué rama de
 //! HKCU se usa (`Software\Classes` en producción, una rama de pruebas en los tests).
 
+use std::fmt::Write as _;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -179,7 +180,7 @@ pub fn launcher(root: &Path) -> PathBuf {
 /// Registro de «Abrir con» de un componente, profile y acceso directo.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OpenWithRecord {
-    /// ProgID `MITO.<16 hex>`.
+    /// `ProgID` `MITO.<16 hex>`.
     pub progid: String,
     /// Profile.
     pub profile: String,
@@ -319,7 +320,7 @@ pub fn extensions(text: &str) -> Result<Vec<String>> {
     Ok(result)
 }
 
-/// ProgID de un profile, componente y acceso directo: `MITO.` y los 16 primeros
+/// `ProgID` de un profile, componente y acceso directo: `MITO.` y los 16 primeros
 /// caracteres hexadecimales del SHA-256 de `profile/app[/shortcut]`.
 pub fn progid(profile: &str, app: &str, shortcut: Option<&str>) -> String {
     let seed = match shortcut {
@@ -327,12 +328,16 @@ pub fn progid(profile: &str, app: &str, shortcut: Option<&str>) -> String {
         Some(shortcut) => format!("{profile}/{app}/{shortcut}"),
     };
     let digest = Sha256::digest(seed.as_bytes());
-    let hex: String = digest
-        .iter()
-        .take(8)
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
-    format!("MITO.{hex}")
+    format!("MITO.{}", hex(&digest[..8]))
+}
+
+/// Texto hexadecimal en minúsculas de `bytes`.
+pub(crate) fn hex(bytes: &[u8]) -> String {
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        let _ = write!(text, "{byte:02x}");
+    }
+    text
 }
 
 /// Nombre que muestra el menú «Abrir con».
@@ -362,7 +367,7 @@ pub fn command(root: &Path, profile: &str, app: &str, shortcut: Option<&str>) ->
     format!("{} -- \"%1\"", mito_terminal::list2cmdline(&argv))
 }
 
-/// Icono del ProgID y de los protocolos de un componente.
+/// Icono del `ProgID` y de los protocolos de un componente.
 ///
 /// Por ahora es el propio `mitow.exe` (icono 0). PUNTO DE ENGANCHE: cuando exista el
 /// icono con insignia de `shortcuts::application_icon` (nombre `open-<tag>-<hash8>`, ver
@@ -391,7 +396,7 @@ fn create(classes: &Classes, relative: &str) -> Result<(Key, String)> {
     Ok((key, path))
 }
 
-/// Escribe el ProgID del registro y marca sus extensiones en `OpenWithProgids`.
+/// Escribe el `ProgID` del registro y marca sus extensiones en `OpenWithProgids`.
 ///
 /// # Errors
 ///
@@ -427,7 +432,7 @@ pub fn write_progid(
     Ok(())
 }
 
-/// ¿Es `value` un ProgID propio (`MITO\.[0-9a-f]{16}`)?
+/// ¿Es `value` un `ProgID` propio (`MITO\.[0-9a-f]{16}`)?
 fn own_progid(value: &str) -> bool {
     value.strip_prefix("MITO.").is_some_and(|hex| {
         hex.len() == 16
@@ -437,12 +442,12 @@ fn own_progid(value: &str) -> bool {
     })
 }
 
-/// Retira solo el ProgID propio y su valor de cada `OpenWithProgids`; nunca toca el valor
+/// Retira solo el `ProgID` propio y su valor de cada `OpenWithProgids`; nunca toca el valor
 /// predeterminado de la extensión ni la asociación del usuario.
 ///
 /// # Errors
 ///
-/// `Registro de «Abrir con» no válido` si el ProgID no es `MITO.<16 hex>`, y el error del
+/// `Registro de «Abrir con» no válido` si el `ProgID` no es `MITO.<16 hex>`, y el error del
 /// sistema.
 pub fn remove_progid(classes: &Classes, record: &OpenWithRecord) -> Result<()> {
     if !own_progid(&record.progid) {
@@ -462,7 +467,7 @@ pub fn remove_progid(classes: &Classes, record: &OpenWithRecord) -> Result<()> {
     delete_tree(&classes.user_path(&record.progid))
 }
 
-/// Comando registrado del ProgID, o `None` si no existe.
+/// Comando registrado del `ProgID`, o `None` si no existe.
 ///
 /// # Errors
 ///
@@ -479,7 +484,7 @@ pub fn current_command(classes: &Classes, record: &OpenWithRecord) -> Result<Opt
 
 /// Registra (o sustituye) «Abrir con» para un componente, profile y acceso directo.
 ///
-/// Si ya existía el ProgID se retira antes de escribir; si la escritura falla se retira el
+/// Si ya existía el `ProgID` se retira antes de escribir; si la escritura falla se retira el
 /// nuevo y se elimina el registro (el anterior también se pierde, como en el original).
 ///
 /// # Errors
@@ -891,6 +896,8 @@ pub(crate) mod testing {
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::panic,
+    clippy::assert_is_empty,
+    clippy::needless_pass_by_value,
     reason = "tests"
 )]
 mod tests {
@@ -1314,7 +1321,10 @@ mod tests {
         .unwrap();
         profile_deleted(classes, &instance.engine, "default").unwrap();
         assert_eq!(sandbox.value(&first.progid, ""), None);
-        assert_eq!(registry(instance.root()).unwrap(), [second.clone()]);
+        assert_eq!(
+            registry(instance.root()).unwrap(),
+            std::slice::from_ref(&second)
+        );
         installation_removed(classes, &instance.engine, "main/foliate", &quiet).unwrap();
         assert_eq!(sandbox.value(&second.progid, ""), None);
         assert!(registry(instance.root()).unwrap().is_empty());
