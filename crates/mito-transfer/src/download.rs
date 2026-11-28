@@ -16,6 +16,7 @@ use reqwest::header::{CONTENT_LENGTH, CONTENT_TYPE, ETAG, HeaderMap, LAST_MODIFI
 
 use crate::error::{Error, Result};
 use crate::hash::{ExpectedHash, Hasher, parse_hash};
+use crate::network::Proxies;
 use crate::stream::{ClientConfig, Event, Failure, RedirectRefused, Stream};
 use crate::web::{self, content_range, is_http, public_url, validator, web_page, web_page_error};
 
@@ -39,15 +40,11 @@ pub struct DownloadOptions {
     pub delay: Duration,
     /// Bytes máximos de la descarga. Por defecto [`MAX_DOWNLOAD`].
     pub max_bytes: u64,
-    /// Proxy explícito (`http://host:puerto`). `None` deja el comportamiento por
-    /// defecto de `reqwest` (variables de entorno y proxy del sistema); `Some("")`
-    /// desactiva cualquier proxy, como un `http_proxy=` vacío en `config.properties`.
-    ///
-    /// Pendiente para F9: resolver este valor desde `config.properties` y el proxy de
-    /// Windows, y validarlo (`network.validate_url`).
-    pub proxy: Option<String>,
-    /// Lista `no_proxy` (hosts y sufijos separados por comas) que acompaña a `proxy`.
-    pub no_proxy: Option<String>,
+    /// Proxies de la descarga, ya resueltos por el llamador (`opener` del original).
+    /// `None` equivale a [`Proxies::system`] con las variables del proceso: el entorno y,
+    /// si no hay ninguna, el proxy manual del registro de Windows. `Some(Proxies::default())`
+    /// fuerza la conexión directa.
+    pub proxies: Option<Proxies>,
     /// Timeout de conexión y de cada lectura de red. Por defecto 60 s.
     pub timeout: Duration,
 }
@@ -58,8 +55,7 @@ impl Default for DownloadOptions {
             attempts: 5,
             delay: Duration::from_secs(2),
             max_bytes: MAX_DOWNLOAD,
-            proxy: None,
-            no_proxy: None,
+            proxies: None,
             timeout: Duration::from_secs(60),
         }
     }
@@ -347,8 +343,7 @@ impl Download<'_> {
         let config = ClientConfig {
             insecure: self.insecure,
             timeout: self.options.timeout,
-            proxy: self.options.proxy.clone(),
-            no_proxy: self.options.no_proxy.clone(),
+            proxies: self.options.proxies.clone(),
         };
         let stream = Stream::start(config, self.address.to_owned(), headers);
         let head = match stream.next(self.operation)? {
