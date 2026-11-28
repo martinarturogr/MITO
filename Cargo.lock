@@ -1661,6 +1661,10 @@ name = "mito-desktop"
 version = "0.0.0"
 dependencies = [
  "ab_glyph",
+ "caseless",
+ "dunce",
+ "insta",
+ "jiff",
  "mito-catalog",
  "mito-core",
  "mito-engine",
@@ -1671,6 +1675,7 @@ dependencies = [
  "sha2 0.11.2",
  "tempfile",
  "thiserror 2.0.21",
+ "uuid",
 ]
 
 [[package]]
