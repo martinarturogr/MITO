@@ -10,7 +10,10 @@
 //! arranque corre en su propio hilo y una acción pedida mientras tanto empieza al
 //! terminar esta.
 //!
-//! `Launch` usa siempre el modo independiente (sin acoplar, F8).
+//! Las acciones de F8 (accesos directos, aplicaciones y datos del host, «Abrir con») están
+//! en `desktop`; usan [`Integration`] para tocar el sistema y poder sustituirlo en pruebas.
+
+mod desktop;
 
 use std::cell::Cell;
 use std::collections::BTreeSet;
@@ -32,7 +35,10 @@ use mito_engine::{
 use mito_i18n::Translator;
 use serde_json::{Map, json};
 
+use crate::integration::Integration;
 use crate::model::{IntegrityInfo, describe};
+pub use desktop::Pick;
+use mito_desktop::host_data::Kind;
 
 /// Lo que la interfaz pide hacer en el hilo (`begin(action, …)` del original).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,12 +75,80 @@ pub enum Action {
         arguments: Vec<String>,
         /// Entrada de aplicación elegida, si el manifiesto declara varias.
         shortcut: Option<String>,
+        /// Abrir acoplada a una pestaña de la terminal de MITO (`attached`).
+        coupled: bool,
     },
     /// «Actualizar catálogos»: reimporta todos los buckets configurados (`refresh`).
     Refresh,
     /// Comprobación de componentes al arrancar (`check_component_updates`): como
     /// `CheckUpdates`, pero respeta la caché diaria y no registra «Búsqueda … finalizada».
     StartupUpdates,
+    /// «Agregar aplicación del host» (`host-add`): busca, elige, registra y ofrece enlazar
+    /// sus datos y su caché.
+    HostAdd,
+    /// «Cache · ✓/✗» y «Data · ✓/✗» de una aplicación del host (`host-cache`,
+    /// `host-data`): enlaza o desenlaza sus carpetas.
+    HostLink {
+        /// Identidad de la aplicación del host.
+        identity: String,
+        /// `Data` (Roaming) o `Cache` (Local).
+        kind: Kind,
+    },
+    /// «Extensiones» (`open-with`): aplica `{entrada: [extensiones]}` en el registro.
+    OpenWith {
+        /// Id de la instalación.
+        installation: String,
+        /// Extensiones por entrada de aplicación; vacía retira la entrada.
+        wanted: Vec<(String, Vec<String>)>,
+    },
+    /// «Host · ✓/✗» (`host-expose`): expone o retira el `AppData` de MITO en el host.
+    HostExpose(String),
+    /// «Abrir» de una aplicación del host (`host-open`).
+    HostOpen {
+        /// Identidad de la aplicación del host.
+        identity: String,
+        /// Argumentos del usuario.
+        arguments: Vec<String>,
+        /// Abrir acoplada a una pestaña de la terminal de MITO.
+        coupled: bool,
+    },
+    /// «Eliminar» de una aplicación del host (`host-remove`): quita la referencia.
+    HostRemove(String),
+    /// «Acc. directo» de una aplicación del host (`host-link`).
+    HostShortcut {
+        /// Identidad de la aplicación del host.
+        identity: String,
+        /// Letras del icono.
+        badge: String,
+        /// Color del icono.
+        color: String,
+        /// Abrir acoplada a una pestaña de la terminal de MITO.
+        coupled: bool,
+        /// Argumentos del usuario.
+        arguments: Vec<String>,
+    },
+    /// «Acceso directo» de «Gestionar profile» (`mito-shortcut`).
+    MitoShortcut {
+        /// Letras del icono.
+        badge: String,
+        /// Color del icono.
+        color: String,
+    },
+    /// «Acc. directo» de una aplicación (`application-shortcut`).
+    ApplicationShortcut {
+        /// Id de la instalación.
+        installation: String,
+        /// Letras del icono.
+        badge: String,
+        /// Color del icono.
+        color: String,
+        /// Abrir acoplada a una pestaña de la terminal de MITO.
+        coupled: bool,
+        /// Argumentos del usuario.
+        arguments: Vec<String>,
+        /// Entrada de aplicación elegida, si el manifiesto declara varias.
+        shortcut: Option<String>,
+    },
 }
 
 impl Action {
@@ -93,15 +167,28 @@ impl Action {
             Self::Launch { .. } => "launch",
             Self::Refresh => "refresh",
             Self::StartupUpdates => "startup-updates",
+            Self::HostAdd => "host-add",
+            Self::HostLink { kind, .. } => match kind {
+                Kind::Data => "host-data",
+                Kind::Cache => "host-cache",
+            },
+            Self::OpenWith { .. } => "open-with",
+            Self::HostExpose(_) => "host-expose",
+            Self::HostOpen { .. } => "host-open",
+            Self::HostRemove(_) => "host-remove",
+            Self::HostShortcut { .. } => "host-link",
+            Self::MitoShortcut { .. } => "mito-shortcut",
+            Self::ApplicationShortcut { .. } => "application-shortcut",
         }
     }
 
     /// Componente al que afecta, para el seguimiento de errores.
     fn component(&self) -> Option<&str> {
         match self {
-            Self::Toggle { installation, .. } | Self::Launch { installation, .. } => {
-                Some(installation)
-            }
+            Self::Toggle { installation, .. }
+            | Self::Launch { installation, .. }
+            | Self::OpenWith { installation, .. }
+            | Self::ApplicationShortcut { installation, .. } => Some(installation),
             Self::Install(key)
             | Self::RemoveComponent(key)
             | Self::UpdateComponent(key)
@@ -126,6 +213,14 @@ pub enum Request {
     },
     /// `UnverifiedDownloadsDialog`: descargas sin hash, una por elemento.
     Unverified(Vec<String>),
+    /// `HostDataConfirm`: pregunta de enlaces del host con la etiqueta (clave de
+    /// traducción) del botón que acepta.
+    HostConfirm {
+        /// Texto de la pregunta, sin traducir.
+        message: Message,
+        /// Etiqueta del botón de aceptar (por defecto `Enlazar`).
+        label: &'static str,
+    },
 }
 
 /// Mensajes del hilo a la interfaz.
@@ -148,6 +243,14 @@ pub enum Report {
         request: Request,
         /// Dónde responder.
         answer: Sender<bool>,
+    },
+    /// `HostDiscoverDialog`: elegir una aplicación del host entre las encontradas. La
+    /// respuesta es el archivo, `Browse` o `Cancel` (también si el canal se rompe).
+    Pick {
+        /// `(etiqueta, ruta)` de cada aplicación encontrada.
+        found: Vec<(String, std::path::PathBuf)>,
+        /// Dónde responder.
+        answer: Sender<Pick>,
     },
     /// Primera fase activa de la operación, para el diálogo de progreso. Su estado se lee
     /// con `Operation::state()` y se cancela con `Operation::cancel()`.
@@ -194,7 +297,27 @@ pub fn spawn_translated(
     reports: Sender<Report>,
     tr: Translator,
 ) -> JoinHandle<()> {
-    thread::spawn(move || run(&engine, &action, profile, &reports, &tr))
+    spawn_integrated(
+        engine,
+        action,
+        profile,
+        reports,
+        tr,
+        Arc::new(Integration::system()),
+    )
+}
+
+/// Como [`spawn_translated`], con la integración con Windows que usan las acciones de
+/// F8 (escritorio, `AppData` del host, registro y selectores nativos).
+pub fn spawn_integrated(
+    engine: Arc<Engine>,
+    action: Action,
+    profile: Option<String>,
+    reports: Sender<Report>,
+    tr: Translator,
+    integration: Arc<Integration>,
+) -> JoinHandle<()> {
+    thread::spawn(move || run(&engine, &action, profile, &reports, &tr, &integration))
 }
 
 /// Cuerpo del hilo.
@@ -204,6 +327,7 @@ fn run(
     profile: Option<String>,
     reports: &Sender<Report>,
     tr: &Translator,
+    integration: &Integration,
 ) {
     // El listener del `Operation` necesita el propio `Operation` para enviar `Started`;
     // la ranura se vacía al terminar para romper el ciclo de referencias.
@@ -227,6 +351,7 @@ fn run(
         reports,
         tr,
         operation: &operation,
+        integration,
     };
     let mut current = profile;
     let outcome = catch_unwind(AssertUnwindSafe(|| execute(&context, action, &mut current)));
@@ -269,6 +394,7 @@ struct Context<'a> {
     reports: &'a Sender<Report>,
     tr: &'a Translator,
     operation: &'a Operation,
+    integration: &'a Integration,
 }
 
 impl Context<'_> {
@@ -405,16 +531,19 @@ fn execute(context: &Context<'_>, action: &Action, profile: &mut Option<String>)
             installation,
             arguments,
             shortcut,
+            coupled,
         } => {
             let options = LaunchOptions {
                 app: Some(installation),
                 arguments: arguments.clone(),
                 shortcut: shortcut.as_deref(),
+                coupled: *coupled,
                 ..LaunchOptions::default()
             };
             engine.launch(required(profile.as_deref())?, &options)?;
         }
         Action::Refresh => refresh(context)?,
+        other => desktop::execute(context, other, profile.as_deref())?,
     }
     Ok(())
 }
@@ -575,20 +704,30 @@ mod tests {
 
     /// Todo lo que la interfaz recibe de una acción.
     #[derive(Default)]
-    struct Outcome {
-        logs: Vec<(String, bool)>,
-        requests: Vec<Request>,
-        started: usize,
-        profile: Option<String>,
-        failure: Option<Failure>,
+    pub(super) struct Outcome {
+        pub logs: Vec<(String, bool)>,
+        pub requests: Vec<Request>,
+        pub offered: Vec<Vec<(String, std::path::PathBuf)>>,
+        pub started: usize,
+        pub profile: Option<String>,
+        pub failure: Option<Failure>,
+    }
+
+    /// Respuestas de la interfaz a lo que pide el hilo.
+    #[derive(Default)]
+    pub(super) struct Script {
+        /// Respuestas a las confirmaciones, en orden (por defecto sí).
+        pub answers: Vec<bool>,
+        /// Respuestas a «elegir aplicación del host», en orden (por defecto cancelar).
+        pub picks: Vec<Pick>,
     }
 
     impl Outcome {
-        fn said(&self, text: &str) -> bool {
+        pub fn said(&self, text: &str) -> bool {
             self.logs.iter().any(|(line, _)| line == text)
         }
 
-        fn errors(&self) -> Vec<&str> {
+        pub fn errors(&self) -> Vec<&str> {
             self.logs
                 .iter()
                 .filter(|(_, error)| *error)
@@ -599,16 +738,33 @@ mod tests {
 
     /// Ejecuta una acción y contesta a las confirmaciones con `answers` (por defecto sí).
     fn run_action(f: &Fx, action: Action, profile: Option<&str>, answers: &[bool]) -> Outcome {
+        let script = Script {
+            answers: answers.to_vec(),
+            picks: Vec::new(),
+        };
+        run_action_with(f, action, profile, script, Integration::system())
+    }
+
+    /// Como `run_action`, con la integración dada y las respuestas de `script`.
+    pub(super) fn run_action_with(
+        f: &Fx,
+        action: Action,
+        profile: Option<&str>,
+        script: Script,
+        integration: Integration,
+    ) -> Outcome {
         let (reports, inbox) = mpsc::channel();
-        let handle = spawn_translated(
+        let handle = spawn_integrated(
             Arc::clone(&f.engine),
             action,
             profile.map(str::to_owned),
             reports,
             spanish(),
+            Arc::new(integration),
         );
         let tr = spanish();
-        let mut answers = answers.iter().copied();
+        let mut answers = script.answers.into_iter();
+        let mut picks = script.picks.into_iter();
         let mut outcome = Outcome::default();
         loop {
             match inbox.recv().unwrap() {
@@ -616,6 +772,10 @@ mod tests {
                 Report::Confirm { request, answer } => {
                     outcome.requests.push(request);
                     answer.send(answers.next().unwrap_or(true)).unwrap();
+                }
+                Report::Pick { found, answer } => {
+                    outcome.offered.push(found);
+                    answer.send(picks.next().unwrap_or(Pick::Cancel)).unwrap();
                 }
                 Report::Started(_) => outcome.started += 1,
                 Report::Done { profile, failure } => {
@@ -828,6 +988,7 @@ mod tests {
         let f = fx();
         let operation = Operation::detached();
         let tr = spanish();
+        let integration = Integration::system();
         let (reports, inbox) = mpsc::channel();
         drop(inbox);
         let context = Context {
@@ -835,6 +996,7 @@ mod tests {
             reports: &reports,
             tr: &tr,
             operation: &operation,
+            integration: &integration,
         };
         assert!(!context.ask(Request::Unverified(vec![])));
 
@@ -849,6 +1011,7 @@ mod tests {
             reports: &reports,
             tr: &tr,
             operation: &operation,
+            integration: &integration,
         };
         assert!(!context.ask(Request::Unverified(vec![])));
         listener.join().unwrap();
@@ -929,6 +1092,7 @@ mod tests {
             installation: "main/tool".into(),
             arguments: vec!["--x".into()],
             shortcut: None,
+            coupled: false,
         };
         let out = run_action(&f, action, None, &[]);
         assert_eq!(out.errors(), ["Error: Selecciona un profile"]);

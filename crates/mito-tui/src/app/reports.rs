@@ -123,6 +123,9 @@ impl App {
             Report::Confirm { answer, .. } => {
                 let _ = answer.send(false);
             }
+            Report::Pick { answer, .. } => {
+                let _ = answer.send(crate::worker::Pick::Cancel);
+            }
             Report::Started(_) => {}
             Report::Done { .. } => {
                 if let Some((handle, _)) = self.startup.take() {
@@ -159,6 +162,9 @@ impl App {
                 }
             }
             Report::Confirm { request, answer } => self.open_confirmation(request, answer),
+            Report::Pick { answer, .. } => {
+                let _ = answer.send(crate::worker::Pick::Cancel);
+            }
             Report::Started(operation) => {
                 self.busy.operation = Some(operation);
                 self.busy.operation_sequence += 1;

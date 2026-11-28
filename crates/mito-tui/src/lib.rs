@@ -6,6 +6,7 @@
 pub mod app;
 pub mod dialogs;
 pub mod input;
+pub mod integration;
 pub mod model;
 pub mod theme;
 pub mod widgets;

@@ -99,6 +99,10 @@ pub(crate) fn fx() -> Fx {
     };
     let engine = Engine::with_extensions(dir.path(), extensions);
     engine.initialize().unwrap();
+    // El icono de MITO que usan los accesos directos.
+    let icon = engine.layout().branding_icon();
+    fs::create_dir_all(icon.parent().unwrap()).unwrap();
+    fs::write(icon, include_bytes!("../../../../assets/branding/mito.ico")).unwrap();
     Fx {
         _dir: dir,
         source,

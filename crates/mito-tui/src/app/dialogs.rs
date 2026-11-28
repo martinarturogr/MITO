@@ -185,6 +185,7 @@ impl App {
                     installation,
                     arguments,
                     shortcut: entry,
+                    coupled: false,
                 });
             }
             (Purpose::Configuration(profile), Outcome::Saved(true)) => {
@@ -285,6 +286,11 @@ impl App {
             } => self.push_dialog(InstallVersionDialog::new(key, previous, version), purpose),
             Request::Unverified(downloads) => {
                 self.push_dialog(UnverifiedDownloadsDialog::new(downloads), purpose);
+            }
+            Request::HostConfirm { .. } => {
+                if let Purpose::Confirm(answer) = purpose {
+                    let _ = answer.send(false);
+                }
             }
         }
     }

@@ -1773,6 +1773,7 @@ dependencies = [
  "insta",
  "mito-catalog",
  "mito-core",
+ "mito-desktop",
  "mito-engine",
  "mito-i18n",
  "mito-terminal",
