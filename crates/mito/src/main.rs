@@ -6,6 +6,7 @@ mod bootstrap;
 mod cli;
 mod console;
 mod doctor;
+mod host_run;
 
 use std::process;
 use std::sync::Arc;

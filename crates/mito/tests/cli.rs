@@ -272,19 +272,6 @@ fn los_comandos_de_otras_fases_se_analizan_pero_no_estan_disponibles() {
         ),
         (
             vec![
-                "host-run",
-                "host-id",
-                "--profile",
-                "one",
-                "--owned",
-                "--",
-                "--port",
-                "8080",
-            ],
-            "host-run",
-        ),
-        (
-            vec![
                 "pocketool-run",
                 "--profile",
                 "p",

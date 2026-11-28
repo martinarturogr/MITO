@@ -10,17 +10,23 @@ publish.workspace = true
 
 [dependencies]
 ab_glyph.workspace = true
+caseless.workspace = true
+dunce.workspace = true
+jiff.workspace = true
 mito-catalog.workspace = true
 mito-core.workspace = true
 mito-engine.workspace = true
 mito-terminal.workspace = true
 mito-win.workspace = true
 png.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
+uuid.workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 tempfile.workspace = true
 
 [lints]

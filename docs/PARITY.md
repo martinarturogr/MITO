@@ -32,10 +32,10 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `engine.py` | 703 | Motor central: clase Engine, entornos y movimiento de instancia | mito-engine (`engine`, `profiles`, `inventory`, `environment`, `install`, `publish`, `launch`) | F4 (hooks F7, terminal F5, traslado F11) | ✅ |
 | `error_tracking.py` | 272 | Trazas de error locales; PostHog es opcional y no se porta | mito-core (`error_tracking`) | F1 | ✅ parte local; PostHog ➖ |
 | `hooks.py` | 270 | Ejecuta scripts de instalación del catálogo (código de confianza, no sandbox) | mito-engine | F7 | ✅ |
-| `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-win | F8 | ⬜ |
+| `host_apps.py` | 194 | Ejecutables externos lanzados con el entorno del profile MITO | mito-desktop (`host_apps`) y comando `host-run` | F8 (falta `shortcut`) | 🟨 |
 | `host_apps_ui.py` | 190 | Diálogos Textual de aplicaciones del host | mito-tui | F8 | ⬜ |
-| `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-win | F8 | ⬜ |
-| `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-win | F8 | ⬜ |
+| `host_data.py` | 222 | Junctions explícitos de AppData portable hacia carpetas del host | mito-desktop (`host_data`) | F8 | ✅ |
+| `host_exposure.py` | 242 | Junctions explícitos de AppData del host hacia AppData portable | mito-desktop (`host_exposure`) | F8 | ✅ |
 | `i18n.py` | 109 | Traducción de mensajes MITO; catálogos y salida externa no se traducen | mito-i18n | F1 | ✅ |
 | `icons.py` | 442 | Genera iconos de acceso directo con insignia MITO | mito-win | F8 | ⬜ |
 | `inno.py` | 139 | Extrae archivos de instaladores Inno como datos, con innounp fijado | mito-transfer (`archives::inno`) | F7 | ✅ |
@@ -47,7 +47,7 @@ Fuente: `core/app/mito/*.py` (sin `__init__.py`). Líneas = saltos de línea de 
 | `mcp_tools.py` | 285 | Esquemas MCP y adaptadores sobre los servicios genéricos | mito-mcp | F12 | ⬜ |
 | `mcp_ui.py` | 138 | Control y configuración MCP opt-in en Textual | mito-tui | F12 | ⬜ |
 | `msi.py` | 234 | Lee bases MSI y cabinets como datos; nunca ejecuta instalaciones | mito-win (`msi`: lectura con `msi.dll`) y mito-transfer (`archives::extract_msi`) | F7 | ✅ |
-| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-tui | F8 (lo usan los diálogos nativos de F8, F9 y F11) | ⬜ |
+| `native_ui.py` | 15 | Localiza etiquetas fijas de los diálogos nativos de Windows | mito-desktop (`native`: `localize_script` y selectores del host) | F8 (los diálogos de credenciales F9 y de profiles F11 reutilizan `run_script`) | 🟨 |
 | `network.py` | 502 | Enrutado de proxy y autenticación de portal, sin secretos persistidos | mito-transfer | F9 (F2 acepta `proxy`/`no_proxy` ya resueltos) | 🟨 |
 | `network_ui.py` | 122 | Diálogos Textual de red y proxy | mito-tui | F9 | ⬜ |
 | `open_with.py` | 278 | Entradas «Abrir con» de Windows por componente (ProgID en HKCU) | mito-win | F8 | ⬜ |
@@ -106,10 +106,10 @@ Nº de tests = líneas que contienen `def test_` (incluye `async def`), en `core
 | `test_diagnostics.py` | 10 | F1 | `mito-core::diagnostics` (5); 5 dependen de `bootstrap.ps1` ➖ | ✅ |
 | `test_engine.py` | 47 | F4 | `mito-engine/tests/engine.rs` (31 tests del motor; 5 de campos de manifiesto ya en catalog/transfer); 15 dependen de F7 y 1 de F8 | 🟨 |
 | `test_error_tracking.py` | 15 | F1 | `mito-core::error_tracking` (parte local de 5); 10 dependen de PostHog ➖ | ✅ |
-| `test_host_apps.py` | 9 | F8 |  | ⬜ |
-| `test_host_data.py` | 10 | F8 |  | ⬜ |
+| `test_host_apps.py` | 9 | F8 | `mito-desktop::host_apps` (registro, entorno, `.exe`/`.bat`/`.cmd`/`.ps1` reales, descubrimiento, acoplado); el acceso directo (`shortcut`) y el diálogo de descubrimiento quedan pendientes | 🟨 |
+| `test_host_data.py` | 10 | F8 | `mito-desktop::host_data` (10, con junctions reales y raíces del host inyectadas) | ✅ |
 | `test_host_data_ui.py` | 2 | F8 |  | ⬜ |
-| `test_host_exposure.py` | 6 | F8 |  | ⬜ |
+| `test_host_exposure.py` | 6 | F8 | `mito-desktop::host_exposure` (6, más aparte, plan, retirada y formato del registro) | ✅ |
 | `test_i18n.py` | 9 | F1 | `mito-i18n` (6); 3 de interfaz pasan a F6 | 🟨 |
 | `test_inno.py` | 10 | F7 | `mito-transfer::archives::inno` y `mito-engine/tests/extractors.rs` (9) y `crates/mito/tests/hooks.rs` (`expand_inno`) | ✅ |
 | `test_installer_files.py` | 6 | F7 | `crates/mito/tests/hooks.rs` (PowerShell real, raíz con espacios) | ✅ |
