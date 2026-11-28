@@ -14,5 +14,6 @@ mod home_page;
 pub use catalog_page::{Catalog, CatalogRow, Details, Listing, license_label};
 pub use errors::{IntegrityInfo, describe};
 pub use home_page::{
-    Home, HomeRow, bulk_update_label, empty_text, home, row_label, summary, update_tooltip,
+    Home, HomeRow, HostRow, bulk_update_label, empty_text, home, host_label, host_state, row_label,
+    state_label, summary, update_tooltip,
 };

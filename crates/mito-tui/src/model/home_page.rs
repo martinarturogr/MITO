@@ -2,13 +2,23 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use std::path::PathBuf;
+
 use mito_catalog::{COMPATIBLE, Manifest};
 use mito_core::Message;
+use mito_desktop::host_data::Kind;
+use mito_desktop::{host_apps, host_data, host_exposure, open_with};
 use mito_engine::{Candidate, Engine, Result};
 use mito_i18n::Translator;
 
+use crate::integration::Integration;
+
 /// Una fila de componente instalado.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(
+    clippy::struct_excessive_bools,
+    reason = "cada booleano es el estado de un botón de la fila"
+)]
 pub struct HomeRow {
     /// Id de la instalación (`bucket/app`).
     pub installation: String,
@@ -24,6 +34,27 @@ pub struct HomeRow {
     pub can_open: bool,
     /// Versión posterior del catálogo (`available_update`), compatible o no.
     pub update: Option<Candidate>,
+    /// Hay extensiones registradas en «Abrir con» para este componente y profile
+    /// (`Extensiones ✓`). Lo calcula [`host_state`].
+    pub open_with: bool,
+    /// El `AppData` de MITO está expuesto en el host (`Host · ✓`). Lo calcula
+    /// [`host_state`].
+    pub exposed: bool,
+}
+
+/// Una aplicación del host registrada.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HostRow {
+    /// Identidad registrada.
+    pub identity: String,
+    /// Ruta del ejecutable.
+    pub path: PathBuf,
+    /// El archivo sigue existiendo.
+    pub available: bool,
+    /// Hay enlaces de datos (`Data · ✓`).
+    pub data: bool,
+    /// Hay enlaces de caché (`Cache · ✓`).
+    pub cache: bool,
 }
 
 impl HomeRow {
@@ -46,6 +77,8 @@ pub struct Home {
     pub active: usize,
     /// Instalaciones con actualización `Compatible`, en el orden de las filas.
     pub pending: Vec<String>,
+    /// Aplicaciones del host registradas (vacío hasta llamar a [`host_state`]).
+    pub host: Vec<HostRow>,
 }
 
 /// Calcula Inicio para `profile` (sin profile nada está activo) con el `catalog` actual.
@@ -74,6 +107,8 @@ pub fn home(
             active: active.contains(installation),
             can_open: engine.can_open(record),
             update,
+            open_with: false,
+            exposed: false,
         };
         if row.update_is_compatible() {
             pending.push(row.installation.clone());
@@ -84,10 +119,78 @@ pub fn home(
         rows,
         active: active.len(),
         pending,
+        host: Vec::new(),
     })
 }
 
-/// Texto de `#installed-summary`. El host (F8) no se muestra todavía: siempre `0`.
+/// Calcula lo que Inicio muestra del host (F8): los botones `Extensiones ✓/✗` y
+/// `Host · ✓/✗` de cada fila y las aplicaciones del host con sus enlaces. Un estado
+/// que no se puede calcular cuenta como `✗`; solo falla la lectura del inventario.
+///
+/// # Errors
+///
+/// La lectura de `core/state/host-applications.json`.
+pub fn host_state(
+    home: &mut Home,
+    engine: &Engine,
+    profile: Option<&str>,
+    integration: &Integration,
+) -> Result<()> {
+    let root = engine.root();
+    let roots = (integration.host)();
+    for row in &mut home.rows {
+        if row.can_open {
+            row.exposed = roots.as_ref().is_ok_and(|roots| {
+                host_exposure::linked(root, roots, &row.installation).unwrap_or(false)
+            });
+        }
+        if row.active
+            && row.can_open
+            && let Some(profile) = profile.filter(|name| !name.is_empty())
+        {
+            row.open_with = open_with::entries(root, profile, &row.installation)
+                .is_ok_and(|records| !records.is_empty());
+        }
+    }
+    let linked = |identity: &str, kind: Kind| {
+        roots
+            .as_ref()
+            .is_ok_and(|roots| host_data::linked(root, roots, identity, kind).unwrap_or(false))
+    };
+    home.host = host_apps::inventory(root)?
+        .into_iter()
+        .map(|(identity, path)| HostRow {
+            available: path.is_file(),
+            data: linked(&identity, Kind::Data),
+            cache: linked(&identity, Kind::Cache),
+            identity,
+            path,
+        })
+        .collect();
+    Ok(())
+}
+
+/// Etiqueta de un botón con estado: `{texto}✓` o `{texto}✗` (`Cache · ✓`).
+pub fn state_label(text: &str, on: bool) -> String {
+    format!("{text}{}", if on { '✓' } else { '✗' })
+}
+
+/// Nombre de una aplicación del host: `{nombre} · Host`, más ` · No disponible` si falta
+/// el archivo.
+pub fn host_label(row: &HostRow, tr: &Translator) -> String {
+    let stem = row
+        .path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let mut label = format!("{stem} · Host");
+    if !row.available {
+        label.push_str(tr.text(" · No disponible"));
+    }
+    label
+}
+
+/// Texto de `#installed-summary`.
 pub fn summary(home: &Home, profile: Option<&str>, tr: &Translator) -> String {
     let profile = profile
         .filter(|name| !name.is_empty())
@@ -98,7 +201,7 @@ pub fn summary(home: &Home, profile: Option<&str>, tr: &Translator) -> String {
     .arg("p0", home.rows.len())
     .arg("p2", home.active)
     .arg("p4", profile)
-    .arg("p6", 0))
+    .arg("p6", home.host.len()))
 }
 
 /// Texto de la lista cuando no hay componentes instalados.

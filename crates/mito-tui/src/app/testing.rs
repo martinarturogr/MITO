@@ -11,9 +11,12 @@ use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 
+use mito_desktop::host_data::HostRoots;
+
 use super::state::App;
 use crate::input::Input;
-use crate::model::fixture::{Fx, fx, spanish};
+use crate::integration::testing::{Fakes, Sandbox, integration};
+use crate::model::fixture::{Fx, fx, fx_with, spanish};
 use crate::widgets::testing::buffer_text;
 
 /// Textos recibidos por el portapapeles falso.
@@ -26,6 +29,15 @@ pub struct Rig {
     pub now: Instant,
     pub copies: Copies,
     pub opened: Arc<Mutex<Vec<PathBuf>>>,
+    /// Escritorio temporal donde caen los accesos directos.
+    pub desktop: tempfile::TempDir,
+    /// Carpetas `AppData` del host temporales.
+    pub host: tempfile::TempDir,
+    pub roots: HostRoots,
+    /// Rama de HKCU desechable de «Abrir con» y protocolos.
+    pub sandbox: Sandbox,
+    /// Selectores y lanzamientos falsos.
+    pub fakes: Fakes,
     pub width: u16,
     pub height: u16,
 }
@@ -37,12 +49,27 @@ impl Rig {
         Self::build(setup, None)
     }
 
+    /// Como [`with`](Self::with), con unos `Jobs` falsos en el motor.
+    pub fn with_jobs(setup: impl FnOnce(&Fx), jobs: impl mito_engine::Jobs + 'static) -> Self {
+        Self::build_with(fx_with(Some(Box::new(jobs))), setup, None)
+    }
+
     /// Como [`with`](Self::with), con un profile inicial pedido.
     pub fn build(setup: impl FnOnce(&Fx), profile: Option<&str>) -> Self {
-        let f = fx();
+        Self::build_with(fx(), setup, profile)
+    }
+
+    fn build_with(f: Fx, setup: impl FnOnce(&Fx), profile: Option<&str>) -> Self {
         setup(&f);
         let copies: Copies = Arc::default();
         let opened: Arc<Mutex<Vec<PathBuf>>> = Arc::default();
+        let desktop = tempfile::tempdir().unwrap();
+        let host = tempfile::tempdir().unwrap();
+        let roots = HostRoots::new(host.path().join("Roaming"), host.path().join("Local"));
+        std::fs::create_dir_all(roots.folder(mito_desktop::host_data::Kind::Data)).unwrap();
+        std::fs::create_dir_all(roots.folder(mito_desktop::host_data::Kind::Cache)).unwrap();
+        let sandbox = Sandbox::new();
+        let fakes = Fakes::default();
         let app = {
             let copies = Arc::clone(&copies);
             let opened = Arc::clone(&opened);
@@ -56,6 +83,13 @@ impl Rig {
                     Ok(())
                 })
                 .without_identity()
+                .with_integration(integration(
+                    desktop.path(),
+                    &roots,
+                    &sandbox.classes,
+                    &fakes,
+                ))
+                .with_protocol_watch(Duration::ZERO)
         };
         let mut rig = Self {
             f,
@@ -63,6 +97,11 @@ impl Rig {
             now: Instant::now(),
             copies,
             opened,
+            desktop,
+            host,
+            roots,
+            sandbox,
+            fakes,
             width: 120,
             height: 40,
         };
@@ -164,6 +203,23 @@ impl Rig {
         });
     }
 
+    /// Pulsa Tab hasta que `id` tenga el foco del diálogo de arriba.
+    pub fn dialog_focus_on(&mut self, id: &str) {
+        self.draw();
+        for _ in 0..200 {
+            let focused = self
+                .app
+                .dialogs
+                .last_mut()
+                .and_then(|open| open.slot.dialog().focus().focused().map(str::to_owned));
+            if focused.as_deref() == Some(id) {
+                return;
+            }
+            self.press(KeyCode::Tab);
+        }
+        panic!("el foco del diálogo no llega a {id}");
+    }
+
     /// Pulsa Tab hasta que `id` tenga el foco de la pantalla principal.
     pub fn focus_on(&mut self, id: &str) {
         self.draw();
@@ -194,6 +250,11 @@ impl Rig {
     /// Número de diálogos abiertos.
     pub fn dialogs(&self) -> usize {
         self.app.dialogs.len()
+    }
+
+    /// ¿Empieza alguna línea del log por `prefix`?
+    pub fn logs_start(&self, prefix: &str) -> bool {
+        self.log_lines().iter().any(|line| line.starts_with(prefix))
     }
 
     /// ¿Dice el log `text` exactamente en alguna línea?

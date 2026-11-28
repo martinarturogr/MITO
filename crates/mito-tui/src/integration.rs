@@ -121,6 +121,31 @@ pub(crate) mod testing {
         }
     }
 
+    impl Sandbox {
+        fn path(&self, scheme: &str) -> String {
+            format!(r"Software\MITO-tests\{}\Classes\{scheme}", self.name)
+        }
+
+        /// Registra el protocolo `scheme` con `command` en la rama de prueba.
+        pub fn protocol(&self, scheme: &str, command: &str) {
+            let path = self.path(scheme);
+            let key = Key::create(Hive::CurrentUser, &path).unwrap();
+            key.set_string("URL Protocol", "").unwrap();
+            let open =
+                Key::create(Hive::CurrentUser, &format!(r"{path}\shell\open\command")).unwrap();
+            open.set_string("", command).unwrap();
+        }
+
+        /// Comando registrado para `scheme`, si lo hay.
+        pub fn command(&self, scheme: &str) -> Option<String> {
+            let path = format!(r"{}\shell\open\command", self.path(scheme));
+            Key::open(Hive::CurrentUser, &path, false)
+                .unwrap()?
+                .get_string("")
+                .unwrap()
+        }
+    }
+
     impl Drop for Sandbox {
         fn drop(&mut self) {
             if let Ok(Some(parent)) = Key::open(Hive::CurrentUser, r"Software\MITO-tests", true) {

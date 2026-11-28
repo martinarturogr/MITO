@@ -108,6 +108,8 @@ pub enum ProfileChoice {
     Cancel,
     /// Crear un profile con este nombre (ya sin espacios sobrantes).
     Create(String),
+    /// Generar el acceso directo a MITO del profile (F8).
+    Shortcut,
     /// Abrir la configuración del profile.
     Configuration,
     /// Eliminar el profile.

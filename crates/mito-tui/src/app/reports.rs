@@ -25,12 +25,13 @@ impl App {
             mito_terminal::identity::apply_safely(self.engine.layout());
         }
         let (tx, rx) = std::sync::mpsc::channel();
-        let handle = worker::spawn_translated(
+        let handle = worker::spawn_integrated(
             Arc::clone(&self.engine),
             Action::StartupUpdates,
             self.current_profile(),
             tx,
             self.tr.clone(),
+            Arc::clone(&self.integration),
         );
         self.startup = Some((handle, rx));
     }
@@ -40,7 +41,14 @@ impl App {
     pub(super) fn request(&mut self, action: Action) {
         let needs_profile = matches!(
             action,
-            Action::Toggle { .. } | Action::DeleteProfile | Action::Launch { .. }
+            Action::Toggle { .. }
+                | Action::DeleteProfile
+                | Action::Launch { .. }
+                | Action::OpenWith { .. }
+                | Action::HostOpen { .. }
+                | Action::HostShortcut { .. }
+                | Action::MitoShortcut { .. }
+                | Action::ApplicationShortcut { .. }
         );
         if needs_profile && self.current_profile().is_none() {
             let text = self.text("Selecciona un profile");
@@ -67,12 +75,13 @@ impl App {
 
     fn spawn(&mut self, action: Action) {
         let profile = self.current_profile();
-        self.worker = Some(worker::spawn_translated(
+        self.worker = Some(worker::spawn_integrated(
             Arc::clone(&self.engine),
             action,
             profile,
             self.reports_tx.clone(),
             self.tr.clone(),
+            Arc::clone(&self.integration),
         ));
     }
 
@@ -162,9 +171,7 @@ impl App {
                 }
             }
             Report::Confirm { request, answer } => self.open_confirmation(request, answer),
-            Report::Pick { answer, .. } => {
-                let _ = answer.send(crate::worker::Pick::Cancel);
-            }
+            Report::Pick { found, answer } => self.open_host_discover(found, answer),
             Report::Started(operation) => {
                 self.busy.operation = Some(operation);
                 self.busy.operation_sequence += 1;
